@@ -1,1 +1,72 @@
-# Placeholder - will be implemented in Milestone 1
+services:
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: ai-log-analyzer-frontend
+
+    ports:
+      - "3000:3000"
+
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8002
+
+    depends_on:
+      - backend
+
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+    container_name: ai-log-analyzer-backend
+
+    ports:
+      - "8000:8000"
+
+    volumes:
+      - ./backend:/app
+
+    env_file:
+      - .env
+
+    depends_on:
+      - postgres
+      - redis
+
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:17
+
+    container_name: ai-log-analyzer-postgres
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ai_log_analyzer
+
+    ports:
+      - "5433:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+
+    container_name: ai-log-analyzer-redis
+
+    ports:
+      - "6379:6379"
+
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
