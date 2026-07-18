@@ -1,42 +1,32 @@
-interface Props{
-    label:string;
-    required?:boolean;
+import { type LabelHTMLAttributes, type ReactNode } from "react";
+
+interface FormLabelProps extends LabelHTMLAttributes<HTMLLabelElement> {
+  children: ReactNode;
+  required?: boolean;
 }
 
+/**
+ * Standard field label used across all form controls.
+ * text-sm / font-medium / slate-700 matches the "lead_id", "campaign_id" etc.
+ * labels in the reference design. A red asterisk is appended for required fields.
+ */
 export default function FormLabel({
-    label,
-    required
-}:Props){
-
-    return(
-
-        <label
-            className="
-            mb-2.5
-            block
-            text-sm
-            font-medium
-            text-slate-800
-            "
-        >
-
-            {label}
-
-            {required && (
-
-                <span
-                    className="
-                    ml-1
-                    text-red-500
-                    "
-                >
-                    *
-                </span>
-
-            )}
-
-        </label>
-
-    );
-
+  children,
+  required,
+  className = "",
+  ...props
+}: FormLabelProps) {
+  return (
+    <label
+      className={`mb-1.5 block text-sm font-medium text-slate-700 ${className}`}
+      {...props}
+    >
+      {children}
+      {required && (
+        <span className="ml-0.5 text-red-500" aria-hidden="true">
+          *
+        </span>
+      )}
+    </label>
+  );
 }
