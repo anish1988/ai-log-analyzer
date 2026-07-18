@@ -17,7 +17,7 @@ export interface NavigationItem {
 export const navigationItems: NavigationItem[] = [
   {
     title: "New Analysis",
-    href: "/",
+    href: "/new-analysis",
     icon: Search,
   },
   {

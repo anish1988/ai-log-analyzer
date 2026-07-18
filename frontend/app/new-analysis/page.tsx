@@ -1,11 +1,27 @@
+import PageContainer from "@/components/common/page/PageContainer";
+
 import Stepper from "@/components/stepper/Stepper";
 
-export default function NewAnalysisPage() {
-  return (
-    <div className="space-y-8">
+import SearchFilterCard from "@/components/analysis/search-filter-card/SearchFilterCard";
 
-      <Stepper currentStep={1} />
+export default function NewAnalysisPage(){
 
-    </div>
-  );
+    return(
+
+        <PageContainer>
+
+            <Stepper
+                currentStep={1}
+            />
+
+            <div className="mt-8">
+
+                <SearchFilterCard/>
+
+            </div>
+
+        </PageContainer>
+
+    );
+
 }
