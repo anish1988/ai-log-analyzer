@@ -1,27 +1,19 @@
-import PageContainer from "@/components/common/page/PageContainer";
+// frontend/app/new-analysis/page.tsx
+"use client";
 
-import Stepper from "@/components/stepper/Stepper";
-
+import { useState } from "react";
+import { SearchFiltersProvider } from "@/providers/SearchFiltersProvider";
 import SearchFilterCard from "@/components/analysis/search-filter-card/SearchFilterCard";
 
-export default function NewAnalysisPage(){
+export default function NewAnalysisPage() {
+  const [step, setStep] = useState(1);
 
-    return(
-
-        <PageContainer>
-
-            <Stepper
-                currentStep={1}
-            />
-
-            <div className="mt-8">
-
-                <SearchFilterCard/>
-
-            </div>
-
-        </PageContainer>
-
-    );
-
+  return (
+    <SearchFiltersProvider>
+      <div className="mx-auto max-w-4xl px-6 py-8">
+        {step === 1 && <SearchFilterCard onNext={() => setStep(2)} />}
+        {step === 2 && <div>Step 2 — Additional Info (placeholder)</div>}
+      </div>
+    </SearchFiltersProvider>
+  );
 }

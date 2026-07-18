@@ -1,23 +1,13 @@
+import type { TierSelection } from "@/types/log-analysis";
+
 export interface TierOption {
-  id: string;
   label: string;
+  value: TierSelection;
 }
 
 export const tierOptions: TierOption[] = [
-  {
-    id: "all",
-    label: "All",
-  },
-  {
-    id: "web",
-    label: "Web",
-  },
-  {
-    id: "db",
-    label: "DB",
-  },
-  {
-    id: "telephony",
-    label: "Telephony",
-  },
+  { label: "All", value: "all" },
+  { label: "Web", value: "web" },
+  { label: "DB", value: "db" },
+  { label: "Telephony", value: "telephony" },
 ];

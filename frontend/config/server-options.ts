@@ -1,20 +1,33 @@
-import type { ServerConfig } from "@/components/analysis/search-filter-card/types";
+import type { Tier, TierSelection } from "@/types/log-analysis";
+
+export interface ServerOption {
+  id: string;
+  label: string;
+  tier: Tier;
+}
 
 /**
- * Single source of truth for every server the analyzer can reach.
- * The UI only ever knows a server by its `id` (e.g. "tel-01"); everything
- * that needs the real IP/SSH user resolves it here.
- *
- * TODO: once this stabilizes, move to env vars or a DB table instead of a
- * checked-in file, especially for anything touching credentials.
+ * Frontend-safe server list — id + display label + tier only. Real IPs and
+ * SSH credentials live exclusively in backend/app/config/servers.py and are
+ * never sent to the browser. Keep these ids in sync with that file.
  */
-export const SERVER_REGISTRY: ServerConfig[] = [
-  { id: "web-01", label: "web-01", tier: "web", ip: "10.10.1.11", sshPort: 22, sshUser: "deploy" },
-  { id: "web-02", label: "web-02", tier: "web", ip: "10.10.1.12", sshPort: 22, sshUser: "deploy" },
+export const SERVER_REGISTRY: ServerOption[] = [
+  { id: "web-01", label: "web-01", tier: "web" },
+  { id: "web-02", label: "web-02", tier: "web" },
 
-  { id: "db-01", label: "db-01", tier: "db", ip: "10.10.2.11", sshPort: 22, sshUser: "deploy" },
+  { id: "db-01", label: "db-01", tier: "db" },
 
-  { id: "tel-01", label: "tel-01", tier: "telephony", ip: "10.10.3.11", sshPort: 22, sshUser: "deploy" },
-  { id: "tel-02", label: "tel-02", tier: "telephony", ip: "10.10.3.12", sshPort: 22, sshUser: "deploy" },
-  { id: "tel-03", label: "tel-03", tier: "telephony", ip: "10.10.3.13", sshPort: 22, sshUser: "deploy" },
+  { id: "tel-01", label: "tel-01", tier: "telephony" },
+  { id: "tel-02", label: "tel-02", tier: "telephony" },
+  { id: "tel-03", label: "tel-03", tier: "telephony" },
 ];
+
+/**
+ * Point 3/4: "all" -> every server, across every tier.
+ * A single tier -> only that tier's servers, in the {label, value} shape
+ * MultiSelect expects.
+ */
+export function getServerOptionsForTier(tier: TierSelection) {
+  const servers = tier === "all" ? SERVER_REGISTRY : SERVER_REGISTRY.filter((s) => s.tier === tier);
+  return servers.map(({ id, label }) => ({ label, value: id }));
+}
