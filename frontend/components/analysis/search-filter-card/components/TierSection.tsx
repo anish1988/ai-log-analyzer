@@ -1,32 +1,19 @@
-import { Badge } from "@/components/ui/badge";
+"use client";
 
-const tiers = [
-  "TIER 1",
-  "TIER 2",
-  "TIER 3",
-];
+import ChipSelector from "@/components/form/ChipSelector";
+import { tierOptions } from "@/config/tier-options";
+import { useSearchFilters } from "@/hooks/useSearchFilters";
+import type { TierSelection } from "../types";
 
 export default function TierSection() {
+  const { filters, setTier } = useSearchFilters();
+
   return (
-    <div>
-
-      <h3 className="mb-4 text-lg font-semibold">
-        Tier
-      </h3>
-
-      <div className="flex gap-3">
-
-        {tiers.map((tier) => (
-          <Badge
-            key={tier}
-            className="cursor-pointer px-5 py-2"
-          >
-            {tier}
-          </Badge>
-        ))}
-
-      </div>
-
-    </div>
+    <ChipSelector
+      label="Tier"
+      options={tierOptions}
+      value={filters.tier}
+      onChange={(value) => setTier(value as TierSelection)}
+    />
   );
 }
