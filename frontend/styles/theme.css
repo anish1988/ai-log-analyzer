@@ -1,0 +1,24 @@
+:root {
+
+  --primary:#5B5CEB;
+  --primary-hover:#4B4CDA;
+
+  --sidebar:#10152D;
+
+  --background:#F7F8FC;
+
+  --card:#FFFFFF;
+
+  --border:#E6E8EF;
+
+  --text:#1C2140;
+
+  --text-secondary:#6F7896;
+
+  --success:#16A34A;
+
+  --danger:#EF4444;
+
+  --radius:12px;
+
+}
