@@ -37,6 +37,20 @@ def _search_local_file_sync(
     print(f"Search Terms     : {search_terms}")
     print("=" * 100)
 
+    import os
+    from pathlib import Path
+
+    print("=" * 80)
+    print("[DEBUG] Environment")
+    print(f"Current Working Dir : {os.getcwd()}")
+    print(f"Hostname            : {os.uname().nodename}")
+    print(f"Candidate Path      : {candidate.path}")
+    print(f"Path Exists         : {os.path.exists(candidate.path)}")
+    print(f"Is File             : {os.path.isfile(candidate.path)}")
+    print("=" * 80)
+
+    print("[DEBUG] Listing /var/log")
+    print(os.listdir("/var/log"))
     path = Path(candidate.path)
 
     print(f"[local_reader::_search_local_file_sync] Checking file exists: {path}")

@@ -88,6 +88,32 @@ export function useLogFetch() {
         }
 
         const data: LogFetchResponse = await fetchRes.json();
+        console.log("======================================");
+        console.log("        AI LOG ANALYZER RESPONSE      ");
+        console.log("======================================");
+
+        console.log("Complete Response:");
+        console.log(data);
+
+        console.log("Total Matched Lines:", data.total_lines);
+
+        console.log("Result Buckets:", data.results);
+
+        data.results?.forEach((bucket: any, bucketIndex: number) => {
+        console.log("--------------------------------------");
+        console.log(`Bucket ${bucketIndex + 1}`);
+
+        console.log("Server:", bucket.server);
+        console.log("Log File:", bucket.log_file);
+        console.log("Matched Lines:", bucket.lines?.length);
+
+        bucket.lines?.forEach((line: any, lineIndex: number) => {
+            console.log(`Line ${lineIndex + 1}`);
+            console.log(line);
+        });
+        });
+
+        console.log("======================================");
         dispatch({ type: "FETCH_SUCCESS", data });
       } catch (err) {
         dispatch({

@@ -8,6 +8,10 @@ from dataclasses import dataclass
 
 from app.config.servers import Tier
 
+import os
+
+LOG_ROOT = os.getenv("LOCAL_LOG_ROOT", "/var/log")
+
 
 @dataclass(frozen=True)
 class LogFileConfig:
@@ -25,40 +29,40 @@ LOG_FILE_REGISTRY: list[LogFileConfig] = [
     # --- Web tier (point 3: no date suffix - static path, searched as-is) ---
     LogFileConfig(
         id="web-apache-access", tier=Tier.WEB, label="Apache Access", service="apache",
-        remote_path_template="/var/log/apache2/access.log", has_date_pattern=False,
+        remote_path_template=f"{LOG_ROOT}/apache2/access.log", has_date_pattern=False,
     ),
     LogFileConfig(
         id="web-apache-error", tier=Tier.WEB, label="Apache Error", service="apache",
-        remote_path_template="/var/log/apache2/error.log", has_date_pattern=False,
+        remote_path_template=f"{LOG_ROOT}/apache2/error.log", has_date_pattern=False,
     ),
     LogFileConfig(
         id="web-apache-error", tier=Tier.WEB, label="Apache Error", service="apache",
-        remote_path_template="/var/log/syslog.log", has_date_pattern=False,
+        remote_path_template=f"{LOG_ROOT}/syslog.log", has_date_pattern=False,
     ),
     LogFileConfig(
         id="web-mysql", tier=Tier.WEB, label="MySQL", service="mysql",
-        remote_path_template="/var/log/mysql/error.log", has_date_pattern=False,
+        remote_path_template=f"{LOG_ROOT}/mysql/error.log", has_date_pattern=False,
     ),
 
     # --- Telephony tier (multiple log files per server, e.g. tel-01 has several) ---
     LogFileConfig(
         id="tel-messages", tier=Tier.TELEPHONY, label="Messages", service="asterisk-core",
-        remote_path_template="/var/log/asterisk/messages_{date}", has_date_pattern=True,
+        remote_path_template=f"{LOG_ROOT}/asterisk/messages_{{date}}", has_date_pattern=True,
     ),
     LogFileConfig(
         id="tel-full", tier=Tier.TELEPHONY, label="Full", service="asterisk-full",
-        remote_path_template="/var/log/asterisk/full_{date}", has_date_pattern=True,
+        remote_path_template=f"{LOG_ROOT}/asterisk/full_{{date}}", has_date_pattern=True,
     ),
     LogFileConfig(
         id="tel-vicidial-log", tier=Tier.TELEPHONY, label="VICIdial Log", service="vicidial",
         # Doesn't rotate by date - searched directly.
-        remote_path_template="/var/log/astguiclient/vicidial.log", has_date_pattern=False,
+        remote_path_template=f"{LOG_ROOT}/astguiclient/vicidial.log", has_date_pattern=False,
     ),
 
     # --- DB tier (point 3: no date suffix - static path, searched as-is) ---
     LogFileConfig(
         id="db-slow-query", tier=Tier.DB, label="Slow Query", service="mysql",
-        remote_path_template="/var/log/mysql/slow-query.log", has_date_pattern=False,
+        remote_path_template=f"{LOG_ROOT}/mysql/slow-query.log", has_date_pattern=False,
     ),
 ]
 
