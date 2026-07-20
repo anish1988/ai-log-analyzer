@@ -7,7 +7,7 @@ import SearchFilterCard from "@/components/analysis/search-filter-card/SearchFil
 
 export default function NewAnalysisPage() {
   const [step, setStep] = useState(1);
-
+    
   return (
     <SearchFiltersProvider>
       <div className="mx-auto max-w-4xl px-6 py-8">
