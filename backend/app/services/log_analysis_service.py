@@ -49,7 +49,7 @@ def _build_meta(filters: SearchFiltersRequest) -> dict[str, str]:
     return meta
 
 
-async def _fetch_for_file(
+async def _fetch_for_file_old(
     server: ServerConfig,
     file_config: LogFileConfig,
     from_date,
@@ -86,7 +86,77 @@ async def _fetch_for_file(
         meta=meta,
         lines=[LogLineSchema(**line) for line in deduped],
     )
+async def _fetch_for_file(
+    server: ServerConfig,
+    file_config: LogFileConfig,
+    from_date,
+    to_date,
+    search_terms: list[tuple[str, str]],
+    meta: dict[str, str],
+) -> LogFileResultSchema:
 
+    all_lines: list[dict] = []
+    searched_file = ""
+
+    print("=" * 80)
+    print(f"Searching File : {file_config.label}")
+    print(f"Server         : {server.id}")
+    print("=" * 80)
+
+    for day in each_day(from_date, to_date):
+
+        candidates = resolve_log_file_candidates(file_config, day)
+
+        for candidate in candidates:
+
+            searched_file = candidate.path
+            print(f"Checking : {candidate.path}")
+
+            if server.ip.lower() in LOCAL_HOSTS:
+
+                print(f"[LOCAL] Reading {candidate.path}")
+
+                lines = await search_local_file(
+                    server,
+                    candidate,
+                    search_terms,
+                )
+
+            else:
+
+                print(f"[SSH] Reading {candidate.path}")
+
+                lines = await search_remote_file(
+                    server,
+                    candidate,
+                    search_terms,
+                )
+
+            print(f"Matched Lines : {len(lines)}")
+
+            all_lines.extend(lines)
+
+            # Stop searching other candidates once a dated file
+            # produced matches OR this is the undated fallback.
+            if lines or not candidate.is_dated:
+                break
+
+    deduped = dedupe_log_lines(all_lines)
+
+    print(f"Deduped Lines : {len(deduped)}")
+
+    return LogFileResultSchema(
+        file_id=file_config.id,
+        file_label=file_config.label,
+        server=server.id,
+        searched_file=searched_file,
+        meta=meta,
+        matched_count=len(deduped),
+        lines=[
+            LogLineSchema(**line)
+            for line in deduped
+        ],
+    )
 
 async def fetch_logs(filters: SearchFiltersRequest) -> LogFetchResponse:
     eligible_ids = {s.id for s in get_selectable_servers(filters.tier)}
@@ -118,16 +188,68 @@ async def fetch_logs(filters: SearchFiltersRequest) -> LogFetchResponse:
     to_date = datetime.fromisoformat(filters.to).date()
     meta = _build_meta(filters)
 
+    print("\n================== Creating Tasks ==================\n")
+
     tasks = [
         _fetch_for_file(server, file_config, from_date, to_date, search_terms, meta)
         for server in servers
         for file_config in get_log_files_for_tier(server.tier)
     ]
 
+   # results = await asyncio.gather(*tasks)
+   # result_buckets = [r for r in results if r is not None]
+   
+    print(f"Total Tasks Created : {len(tasks)}")
+
+    print("\n================== Executing Tasks ==================\n")
+
     results = await asyncio.gather(*tasks)
-    result_buckets = [r for r in results if r is not None]
+
+    print("\n================== Raw Results ==================\n")
+
+    for idx, result in enumerate(results, start=1):
+        print(f"\n----- Result {idx} -----")
+        print(f"Type : {type(result)}")
+        print(result)
+
+    print("\n================== Filtering Results ==================\n")
+
+    #result_buckets = [r for r in results if r is not None]
+    result_buckets = results
+
+    print(f"Buckets after filtering : {len(result_buckets)}")
+
+    for idx, bucket in enumerate(result_buckets, start=1):
+        print(f"\n===== Bucket {idx} =====")
+        print(f"Type          : {type(bucket)}")
+
+        if hasattr(bucket, "server"):
+            print(f"Server        : {bucket.server}")
+
+        if hasattr(bucket, "log_file"):
+            print(f"Log File      : {bucket.log_file}")
+
+        if hasattr(bucket, "lines"):
+            print(f"Matched Lines : {len(bucket.lines)}")
+
+            for line_no, line in enumerate(bucket.lines, start=1):
+                print(f"\nLine {line_no}")
+                print(line)
+
+        print("\n================== Summary ==================\n")
+
+        #total = sum(len(bucket.lines) for bucket in result_buckets)
+        total = sum(bucket.matched_count for bucket in result_buckets)
+        print(f"Total Matched Lines : {total}")
+
+
+   # return LogFetchResponse(
+    #    total_lines=sum(len(bucket.lines) for bucket in result_buckets),
+     #   results=result_buckets,
+    #)
+    total_lines = sum(bucket.matched_count for bucket in result_buckets)
 
     return LogFetchResponse(
-        total_lines=sum(len(bucket.lines) for bucket in result_buckets),
+        total_lines=total_lines,
         results=result_buckets,
     )

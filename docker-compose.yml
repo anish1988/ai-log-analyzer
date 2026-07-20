@@ -30,7 +30,7 @@ services:
 
     volumes:
       - ./backend:/app
-      - ./local-test-logs:/var/log
+      #- ./local-test-logs:/var/log
       # Apache Logs
       - /var/log/apache2:/host_logs/apache2:ro
 
@@ -39,6 +39,9 @@ services:
 
      # MySQL Logs (later)
       - /var/log/mysql:/host_logs/mysql:ro
+
+    environment:
+      LOCAL_LOG_ROOT: /host_logs
 
     env_file:
       - .env

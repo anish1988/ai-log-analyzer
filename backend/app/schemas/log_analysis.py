@@ -45,7 +45,9 @@ class LogFileResultSchema(BaseModel):
     file_id: str
     file_label: str
     server: str
+    searched_file: str
     meta: dict[str, str]
+    matched_count: int
     lines: list[LogLineSchema]
 
 
