@@ -8,6 +8,7 @@ import type {
   SearchFiltersState,
 } from "@/lib/log-analysis/types";
 
+const API = process.env.NEXT_PUBLIC_API_URL;
 type Status =
   | "idle"
   | "checking-permission"
@@ -59,7 +60,7 @@ export function useLogFetch() {
     async (filters: SearchFiltersState) => {
       dispatch({ type: "START_PERMISSION_CHECK" });
 
-      const permissionRes = await fetch("/api/logs/permission", {
+      const permissionRes = await fetch(`${API}/api/logs/permission`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tier: filters.tier, servers: filters.servers }),
@@ -75,7 +76,7 @@ export function useLogFetch() {
 
       dispatch({ type: "START_FETCH" });
       try {
-        const fetchRes = await fetch("/api/logs/fetch", {
+        const fetchRes = await fetch(`${API}/api/logs/fetch`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(filters),

@@ -13,7 +13,7 @@ services:
       - /app/node_modules
 
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8002
+      NEXT_PUBLIC_API_URL: http://localhost:8000
 
     depends_on:
       - backend
@@ -30,6 +30,15 @@ services:
 
     volumes:
       - ./backend:/app
+      - ./local-test-logs:/var/log
+      # Apache Logs
+      - /var/log/apache2:/host_logs/apache2:ro
+
+     # Asterisk Logs (later)
+      - /var/log/asterisk:/host_logs/asterisk:ro
+
+     # MySQL Logs (later)
+      - /var/log/mysql:/host_logs/mysql:ro
 
     env_file:
       - .env

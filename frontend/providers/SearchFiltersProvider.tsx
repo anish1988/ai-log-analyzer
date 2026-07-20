@@ -35,7 +35,16 @@ type Action =
 function reducer(state: SearchFiltersState, action: Action): SearchFiltersState {
   switch (action.type) {
     case "SET_FIELD":
-      return { ...state, [action.key]: action.value };
+      console.log("Reducer Before:", state);  
+      const newState = {
+        ...state,
+        [action.key]: action.value,
+    };
+
+    console.log("Reducer After:", newState);
+
+    return newState;
+      //return { ...state, [action.key]: action.value };
     case "SET_TIER":
       return { ...state, tier: action.tier, servers: [] };
     case "RESET":
@@ -76,6 +85,7 @@ export function SearchFiltersProvider({ children }: { children: ReactNode }) {
 
   const setField = useCallback(
     <K extends keyof SearchFiltersState>(key: K, value: SearchFiltersState[K]) => {
+      console.log("setField()", key, value);  
       dispatch({ type: "SET_FIELD", key, value });
     },
     []
@@ -104,6 +114,7 @@ export function SearchFiltersProvider({ children }: { children: ReactNode }) {
     return Boolean(filters.from && filters.to && filters.servers.length > 0 && hasSearchTerm);
   }, [filters]);
 
+  console.log("Provider Filters:", filters);
   const value = useMemo(
     () => ({ filters, setField, setTier, reset, isValid }),
     [filters, setField, setTier, reset, isValid]

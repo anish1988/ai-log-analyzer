@@ -1,5 +1,64 @@
 # AI Log Analyzer
 
+
+Frontend
+    │
+    ▼
+POST /api/logs/fetch
+    │
+    ▼
+logs.py
+    │
+    ▼
+log_analysis_service.fetch_logs()
+    │
+    ▼
+_fetch_for_file()
+    │
+    ▼
+search_remote_file()
+    │
+    ▼
+_get_connection()
+    │
+    ▼
+asyncssh.connect(...)
+    │
+    ▼
+Trying to load SSH key
+    │
+    ▼
+/etc/log-analyzer/ssh/deploy_key
+    │
+    ▼
+❌ FileNotFoundError
+
+fetch local file and read
+
+fetch_logs()
+      │
+      ▼
+_fetch_for_file()
+      │
+      ▼
+search_local_file()          <-- async function
+      │
+      ▼
+asyncio.to_thread(...)
+      │
+      ▼
+_search_local_file_sync()    <-- actual file reading
+      │
+      ▼
+Read log file
+      │
+      ▼
+Search matching lines
+      │
+      ▼
+Return matching lines
+
+
 .
 ├── backend
 │   ├── app

@@ -5,6 +5,7 @@ import { useSearchFilters } from "@/hooks/useSearchFilters";
 
 export default function SearchFields() {
   const { filters, setField } = useSearchFilters();
+  console.log("Current Filters:", filters);
 
   return (
     <div className="space-y-5">
