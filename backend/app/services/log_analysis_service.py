@@ -22,9 +22,11 @@ from app.schemas.log_analysis import (
     LogLineSchema,
     SearchFiltersRequest,
 )
+import logging
 
+logger = logging.getLogger(__name__)
 LOCAL_HOSTS = {"local", "localhost", "127.0.0.1"}
-
+ 
 def _build_search_terms(filters: SearchFiltersRequest) -> list[tuple[str, str]]:
     fields = [
         ("lead_id", filters.lead_id),
@@ -64,7 +66,7 @@ async def _fetch_for_file_old(
 
         for candidate in candidates:
             if server.ip.lower() in LOCAL_HOSTS:
-                print(f"[LOCAL] Reading {candidate.path}")
+                
                 lines = await search_local_file(server, candidate, search_terms)
             else:
                 print(f"[SSH] Connecting to {server.ip}")
@@ -86,6 +88,7 @@ async def _fetch_for_file_old(
         meta=meta,
         lines=[LogLineSchema(**line) for line in deduped],
     )
+
 async def _fetch_for_file(
     server: ServerConfig,
     file_config: LogFileConfig,
@@ -107,14 +110,25 @@ async def _fetch_for_file(
 
         candidates = resolve_log_file_candidates(file_config, day)
 
+        logger.info("=" * 80)
+        logger.info("SERVICE RECEIVED CANDIDATES")
+
+        for c in candidates:
+            logger.info(
+                f"{c.service}/{c.filename}"
+            )
+
+        logger.info("=" * 80)
+
         for candidate in candidates:
 
-            searched_file = candidate.path
-            print(f"Checking : {candidate.path}")
+            
+            searched_file = f"{candidate.service}/{candidate.filename}"
+            print(f"Checking : {candidate.service}/{candidate.filename}")
 
             if server.ip.lower() in LOCAL_HOSTS:
 
-                print(f"[LOCAL] Reading {candidate.path}")
+                print(f"[LOCAL] Reading {searched_file}")
 
                 lines = await search_local_file(
                     server,
@@ -124,7 +138,7 @@ async def _fetch_for_file(
 
             else:
 
-                print(f"[SSH] Reading {candidate.path}")
+                print(f"[SSH] Reading {searched_file}")
 
                 lines = await search_remote_file(
                     server,
@@ -253,3 +267,4 @@ async def fetch_logs(filters: SearchFiltersRequest) -> LogFetchResponse:
         total_lines=total_lines,
         results=result_buckets,
     )
+

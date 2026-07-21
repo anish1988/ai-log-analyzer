@@ -1,14 +1,7 @@
 """
-Local-filesystem equivalent of ssh_client.search_remote_file - used when
-log_analysis_service resolves a server's IP to LOCAL_HOSTS (dev/testing
-without needing a real SSH target).
-
-Mirrors search_remote_file's behavior and output shape exactly (same dict
-keys) so dedupe_log_lines / LogLineSchema don't need to know which path was
-taken. File I/O is offloaded via asyncio.to_thread so a large local log
-doesn't block the event loop while other (server, file) tasks are running
-concurrently.
+Local-filesystem equivalent of ssh_client.search_remote_file.
 """
+
 import asyncio
 import gzip
 import re
@@ -16,6 +9,31 @@ from pathlib import Path
 
 from app.config.servers import ServerConfig
 from app.log_fetchers.path_resolver import ResolvedLogPath
+
+
+LOCAL_LOG_PATHS = {
+    "apache": [
+        "/var/log/httpd",
+        "/var/log/apache2",
+        "/usr/local/apache/logs",
+    ],
+    "mysql": [
+        "/var/log/mysql",
+        "/var/log",
+    ],
+    "syslog": [
+        "/var/log",
+    ],
+    "asterisk-core": [
+        "/var/log/asterisk",
+    ],
+    "asterisk-full": [
+        "/var/log/asterisk",
+    ],
+    "vicidial": [
+        "/var/log/astguiclient",
+    ],
+}
 
 
 def _escape_for_regex(value: str) -> str:
@@ -29,128 +47,88 @@ def _search_local_file_sync(
 ) -> list[dict]:
 
     print("=" * 100)
-    print("[local_reader::_search_local_file_sync] START")
-    print(f"Server ID        : {server.id}")
-    print(f"Server IP        : {server.ip}")
-    print(f"Log File         : {candidate.path}")
-    print(f"Gzipped          : {candidate.is_gzipped}")
-    print(f"Search Terms     : {search_terms}")
+    print("LOCAL SEARCH")
+    print("=" * 100)
+    print(f"Server     : {server.id}")
+    print(f"Service    : {candidate.service}")
+    print(f"Filename   : {candidate.filename}")
+    print(f"Gzipped    : {candidate.is_gzipped}")
+    print(f"Dated      : {candidate.is_dated}")
     print("=" * 100)
 
-    import os
-    from pathlib import Path
-
-    print("=" * 80)
-    print("[DEBUG] Environment")
-    print(f"Current Working Dir : {os.getcwd()}")
-    print(f"Hostname            : {os.uname().nodename}")
-    print(f"Candidate Path      : {candidate.path}")
-    print(f"Path Exists         : {os.path.exists(candidate.path)}")
-    print(f"Is File             : {os.path.isfile(candidate.path)}")
-    print("=" * 80)
-
-    print("[DEBUG] Listing /var/log")
-    print(os.listdir("/var/log"))
-    path = Path(candidate.path)
-
-    print(f"[local_reader::_search_local_file_sync] Checking file exists: {path}")
-
-    if not path.is_file():
-        print(f"[local_reader::_search_local_file_sync] ERROR - File NOT found: {path}")
-        return []
-
-    print(f"[local_reader::_search_local_file_sync] File found.")
-
-    pattern_string = "|".join(_escape_for_regex(value) for _, value in search_terms)
-
-    print(f"[local_reader::_search_local_file_sync] Regex Pattern: {pattern_string}")
-
-    pattern = re.compile(pattern_string)
+    pattern = re.compile(
+        "|".join(_escape_for_regex(value) for _, value in search_terms)
+    )
 
     opener = gzip.open if candidate.is_gzipped else open
 
-    print(f"[local_reader::_search_local_file_sync] Opening file...")
+    candidate_paths = []
 
-    lines: list[dict] = []
-    total_lines = 0
-    matched_count = 0
+    for directory in LOCAL_LOG_PATHS.get(candidate.service, []):
 
-    with opener(path, mode="rt", errors="replace") as fh:
+        filename = candidate.filename
 
-        print(f"[local_reader::_search_local_file_sync] File opened successfully.")
+        #
+        # Apache on RHEL uses *_log
+        #
+        if "httpd" in directory:
+            filename = (
+                filename
+                .replace("access.log", "access_log")
+                .replace("error.log", "error_log")
+            )
 
-        for line_number, raw_line in enumerate(fh, start=1):
+        candidate_paths.append(Path(directory) / filename)
 
-            total_lines += 1
-            raw = raw_line.rstrip("\n")
+    print("\nCandidate Paths")
 
-            # Uncomment if you want to see EVERY line
-            # print(f"Reading Line {line_number}: {raw}")
+    for p in candidate_paths:
+        print(" ->", p)
 
-            if not pattern.search(raw):
-                continue
+    for path in candidate_paths:
 
-            matched_count += 1
+        print(f"\nChecking : {path}")
 
-            print("-" * 80)
-            print(f"[MATCH FOUND]")
-            print(f"Line Number     : {line_number}")
-            print(f"Raw Line        : {raw}")
+        if not path.is_file():
+            continue
 
-            matched_filters = [
-                key
-                for key, value in search_terms
-                if value in raw
-            ]
+        print(f"Using : {path}")
 
-            print(f"Matched Filters : {matched_filters}")
-            print("-" * 80)
+        lines = []
 
-            lines.append({
-                "server": server.id,
-                "file": candidate.path,
-                "file_id": candidate.path,
-                "line_number": line_number,
-                "raw": raw,
-                "matched_filters": matched_filters,
-            })
+        with opener(path, mode="rt", errors="replace") as fh:
 
-    print("=" * 100)
-    print("[local_reader::_search_local_file_sync] COMPLETED")
-    print(f"Total Lines Read : {total_lines}")
-    print(f"Matched Lines    : {matched_count}")
-    print("=" * 100)
+            for line_number, raw_line in enumerate(fh, start=1):
 
-    return lines
+                raw = raw_line.rstrip("\n")
 
-def _search_local_file_sync_old(
-    server: ServerConfig,
-    candidate: ResolvedLogPath,
-    search_terms: list[tuple[str, str]],
-) -> list[dict]:
-    path = Path(candidate.path)
-    if not path.is_file():
-        return []
+                if not pattern.search(raw):
+                    continue
 
-    pattern = re.compile("|".join(_escape_for_regex(value) for _, value in search_terms))
-    opener = gzip.open if candidate.is_gzipped else open
+                matched_filters = [
+                    key
+                    for key, value in search_terms
+                    if value in raw
+                ]
 
-    lines: list[dict] = []
-    with opener(path, mode="rt", errors="replace") as fh:
-        for line_number, raw_line in enumerate(fh, start=1):
-            raw = raw_line.rstrip("\n")
-            if not pattern.search(raw):
-                continue
-            matched_filters = [key for key, value in search_terms if value in raw]
-            lines.append({
-                "server": server.id,
-                "file": candidate.path,
-                "file_id": candidate.path,
-                "line_number": line_number,
-                "raw": raw,
-                "matched_filters": matched_filters,
-            })
-    return lines
+                lines.append(
+                    {
+                        "server": server.id,
+                        "file": str(path),
+                        "file_id": str(path),
+                        "line_number": line_number,
+                        "raw": raw,
+                        "matched_filters": matched_filters,
+                    }
+                )
+
+        print(f"Matched Lines : {len(lines)}")
+
+        return lines
+
+    print("No matching local log file found.")
+
+    return []
 
 
 async def search_local_file(
@@ -158,4 +136,9 @@ async def search_local_file(
     candidate: ResolvedLogPath,
     search_terms: list[tuple[str, str]],
 ) -> list[dict]:
-    return await asyncio.to_thread(_search_local_file_sync, server, candidate, search_terms)
+    return await asyncio.to_thread(
+        _search_local_file_sync,
+        server,
+        candidate,
+        search_terms,
+    )

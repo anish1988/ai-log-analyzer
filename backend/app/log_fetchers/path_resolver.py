@@ -17,16 +17,19 @@ from datetime import date, timedelta
 
 from app.config.log_files import LogFileConfig
 from app.config.servers import Tier
+import logging
 
+logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class ResolvedLogPath:
-    path: str
+    service: str
+    filename: str
     is_gzipped: bool
     is_dated: bool
 
 
-def resolve_log_file_candidates(
+def resolve_log_file_candidates_old(
     file: LogFileConfig,
     target_date: date,
     now: date | None = None,
@@ -60,6 +63,101 @@ def resolve_log_file_candidates(
 
     return candidates
 
+def resolve_log_file_candidates(
+    file: LogFileConfig,
+    target_date: date,
+    now: date | None = None,
+) -> list[ResolvedLogPath]:
+
+    now = now or date.today()
+
+    #
+    # Static logs
+    #
+    if file.tier != Tier.TELEPHONY or not file.has_date_pattern:
+
+        return [
+            ResolvedLogPath(
+                service=file.service,
+                filename=file.filename_template,
+                is_gzipped=False,
+                is_dated=False,
+            )
+        ]
+
+    #
+    # Telephony logs
+    #
+    date_str = target_date.strftime(file.date_pattern)
+
+    #dated_filename = file.filename.replace("{date}", date_str)
+    dated_filename = file.filename_template.format(date=date_str)
+
+    age = (now - target_date).days
+
+    candidates = []
+
+    if age >= file.gzip_after_days:
+
+        candidates.append(
+            ResolvedLogPath(
+                service=file.service,
+                filename=f"{dated_filename}.gz",
+                is_gzipped=True,
+                is_dated=True,
+            )
+        )
+
+        candidates.append(
+            ResolvedLogPath(
+                service=file.service,
+                filename=dated_filename,
+                is_gzipped=False,
+                is_dated=True,
+            )
+        )
+
+    else:
+
+        candidates.append(
+            ResolvedLogPath(
+                service=file.service,
+                filename=dated_filename,
+                is_gzipped=False,
+                is_dated=True,
+            )
+        )
+
+    #
+    # fallback
+    #
+    undated_filename = re.sub(
+        r"[._-]?\{date\}",
+        "",
+        file.filename_template,
+    )
+    candidates.append(
+        ResolvedLogPath(
+            service=file.service,
+            filename=undated_filename,
+            is_gzipped=False,
+            is_dated=False,
+        )
+    )
+
+    logger.info("=" * 80)
+    logger.info("Generated Candidates")
+
+    for c in candidates:
+        logger.info(
+            f"Candidate => filename={c.filename}, "
+            f"dated={c.is_dated}, "
+            f"gzipped={c.is_gzipped}"
+        )
+
+    logger.info("=" * 80)
+
+    return candidates
 
 def each_day(start: date, end: date):
     cursor = start

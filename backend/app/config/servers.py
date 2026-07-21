@@ -28,12 +28,12 @@ class ServerConfig:
 
 
 SERVER_REGISTRY: list[ServerConfig] = [
-    ServerConfig(id="web-01", label="web-01", tier=Tier.WEB, ip="127.0.0.1", ssh_port=22, ssh_user="deploy"),
-    ServerConfig(id="web-02", label="web-02", tier=Tier.WEB, ip="127.0.0.1", ssh_port=22, ssh_user="deploy"),
+    ServerConfig(id="web-01", label="web-01", tier=Tier.WEB, ip="10.40.174.138", ssh_port=22, ssh_user="icdial"),
+    ServerConfig(id="web-02", label="web-02", tier=Tier.WEB, ip="1210.40.174.138", ssh_port=22, ssh_user="icdial"),
 
     ServerConfig(id="db-01", label="db-01", tier=Tier.DB, ip="10.10.2.11", ssh_port=22, ssh_user="deploy"),
 
-    ServerConfig(id="tel-01", label="tel-01", tier=Tier.TELEPHONY, ip="10.10.3.11", ssh_port=22, ssh_user="deploy"),
+    ServerConfig(id="tel-01", label="tel-01", tier=Tier.TELEPHONY, ip="10.40.174.138", ssh_port=22, ssh_user="icdial"),
     ServerConfig(id="tel-02", label="tel-02", tier=Tier.TELEPHONY, ip="10.10.3.12", ssh_port=22, ssh_user="deploy"),
     ServerConfig(id="tel-03", label="tel-03", tier=Tier.TELEPHONY, ip="10.10.3.13", ssh_port=22, ssh_user="deploy"),
 
