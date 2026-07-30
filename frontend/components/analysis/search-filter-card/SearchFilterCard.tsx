@@ -10,9 +10,11 @@ import TierSection from "./components/TierSection";
 import ServerSelection from "./components/ServerSelection";
 import SearchFields from "./components/SearchFields";
 import ActionButtons from "./components/ActionButtons";
+import type { LogFetchResponse } from "@/lib/log-analysis/types";
 
 export interface SearchFilterCardProps {
-  onNext?: () => void;
+  //onNext?: () => void;
+  onNext?: (data: LogFetchResponse) => void;
 }
 
 export default function SearchFilterCard({
@@ -87,7 +89,17 @@ export default function SearchFilterCard({
 
           <div className="mt-6 flex justify-end">
             <button
-              onClick={() => onNext?.()}
+             // onClick={() => onNext?.()}
+             onClick={() => {
+                console.log("====================================");
+                console.log("Continue to Step 2 Clicked");
+                console.log("Backend Response:", data);
+                console.log("====================================");
+                debugger;
+                if (data) {
+                  onNext?.(data);
+                }
+              }}
               className="rounded-lg bg-blue-600 px-5 py-2 text-white hover:bg-blue-700"
             >
               Continue to Step 2 →
