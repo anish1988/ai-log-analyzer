@@ -14,6 +14,8 @@ services:
 
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000
+      WATCHPACK_POLLING: true
+      CHOKIDAR_USEPOLLING: true
 
     depends_on:
       - backend
@@ -31,7 +33,7 @@ services:
     volumes:
       - ./backend:/app
       #- ./local-test-logs:/var/log
-     # - C:/Users/anish.rai/Downloads/id_rsa:/secrets/id_rsa:ro
+      - C:/Users/anish.rai/Downloads/id_rsa:/secrets/id_rsa:ro
       # Apache Logs
       - /var/log/apache2:/host_logs/apache2:ro
 

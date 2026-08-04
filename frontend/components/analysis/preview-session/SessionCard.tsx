@@ -23,6 +23,7 @@ export interface SessionCardProps {
 
     errors: number;
     warnings: number;
+    raw: any;
   };
 
   selected: boolean;
@@ -39,8 +40,21 @@ export default function SessionCard({
     console.log(" Session Cards");
     console.log(session);
    // console.log(session.fields.lael);
+   console.table([
+    {
+      ID: session.id,
+      Lead: session.leadId,
+      Campaign: session.campaign,
+      Duration: session.duration,
+      Servers: session.server,
+      Lines: session.totalLines,
+      Errors: session.errors,
+      Warnings: session.warnings,
+      Summary: session.summary,
+    },
+  ]);
     console.log("=================================");
-    debugger;
+    //debugger;
   return (
     <div
       onClick={() => onSelect(session.id)}
@@ -108,12 +122,13 @@ export default function SessionCard({
 
               <div className="flex items-center gap-2">
                 <Server className="h-4 w-4" />
-                {session.servers}
+                {session.server}
               </div>
 
               <div className="flex items-center gap-2">
                 <FileText className="h-4 w-4" />
-                {session.totalLines} lines
+                {session.searchedFile} <span className="text-gray-400">•</span>
+                {session.matchedCount} Match{session.matchedCount > 1 ? "es" : ""} 
               </div>
             </div>
 
@@ -164,7 +179,7 @@ export default function SessionCard({
             <FileText className="mb-2 h-5 w-5 text-indigo-600" />
 
             <span className="text-2xl font-semibold">
-              {session.totalLines}
+            {session.matchedCount}
             </span>
 
             <span className="text-sm text-gray-500">
