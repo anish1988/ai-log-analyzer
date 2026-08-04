@@ -1,32 +1,71 @@
 import type { LogFetchResponse } from "@/lib/log-analysis/types";
-import type { Session } from "./SessionList";
 
 export function mapLogFetchResponseToSessions(
   response: LogFetchResponse
-): Session[] {
-
+) {
   if (!response) {
     return [];
   }
 
-  // Replace "results" with your actual property name
-  return response.results.map((item, index) => ({
-    id: item.session_id ?? `SESSION-${index + 1}`,
+  console.log("=================================");
+  console.log("mapLogFetchResponseToSessions()");
+  console.log(response);
+  console.log("=================================");
 
-    leadId: item.lead_id ?? "-",
+  return response.results.map((item, index) => {
+    //----------------------------------------------------------
+    // Dynamic fields (Lead ID, Campaign, Agent, etc.)
+    //----------------------------------------------------------
+    const fields: {
+      label: string;
+      value: string;
+    }[] = [];
 
-    campaign: item.campaign_id ?? "-",
+    Object.entries(item.meta ?? {}).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") {
+        fields.push({
+          label: key,
+          value: String(value),
+        });
+      }
+    });
 
-    duration: `${item.start_time ?? "-"} - ${item.end_time ?? "-"}`,
+    //----------------------------------------------------------
+    // Statistics
+    //----------------------------------------------------------
+    const stats = [
+      {
+        label: "Matched Lines",
+        value: item.matched_count,
+      },
+    ];
 
-    servers: item.servers ?? [],
+    //----------------------------------------------------------
+    // Final object for UI
+    //----------------------------------------------------------
+    const finalResponse = {
+      id: item.file_id || `FILE-${index + 1}`,
 
-    totalLines: item.total_lines ?? 0,
+      title: item.file_label,
 
-    summary: item.summary ?? "No summary available",
+      server: item.server,
 
-    errors: item.error_count ?? 0,
+      searchedFile: item.searched_file,
 
-    warnings: item.warning_count ?? 0,
-  }));
+      matchedCount: item.matched_count,
+
+      fields,
+
+      stats,
+
+      lines: item.lines,
+
+      raw: item,
+    };
+
+    console.log("Mapped Response");
+    console.log(finalResponse);
+
+    return finalResponse;
+  });
 }

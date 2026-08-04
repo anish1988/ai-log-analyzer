@@ -38,6 +38,7 @@ export default function SessionCard({
     console.log("=================================");
     console.log(" Session Cards");
     console.log(session);
+   // console.log(session.fields.lael);
     console.log("=================================");
     debugger;
   return (
@@ -75,17 +76,28 @@ export default function SessionCard({
           <div className="space-y-3">
 
             {/* Title */}
-            <h3 className="text-xl font-semibold text-gray-900">
-              {session.id}
-              <span className="mx-2 text-gray-400">•</span>
+            <div className="flex flex-wrap items-center gap-3">
 
-              Lead {session.leadId}
+                {/* File Name */}
+                <span className="text-lgg font-semibold text-gray-600">
+                    {session.title}
+                </span>
 
-              <span className="mx-2 text-gray-400">•</span>
+                {/* Dynamic Fields */}
+                {session.fields.map((field) => (
+                    <div  key={field.label}  className="flex items-center gap-1" >
+                        <span className="text-gray-400">•</span>
 
-              {session.campaign}
-            </h3>
+                        <span className="font-medium text-gray-600">
+                            {field.label}:
+                        </span>
+                        <span className="text-gray-600">
+                            {field.value}
+                        </span>
+                    </div>
+                ))}
 
+            </div>
             {/* Metadata */}
             <div className="flex flex-wrap items-center gap-5 text-sm text-gray-500">
 
@@ -96,7 +108,7 @@ export default function SessionCard({
 
               <div className="flex items-center gap-2">
                 <Server className="h-4 w-4" />
-                {session.servers.join(", ")}
+                {session.servers}
               </div>
 
               <div className="flex items-center gap-2">
