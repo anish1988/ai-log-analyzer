@@ -24,6 +24,9 @@ const initialState: SearchFiltersState = {
   callerNumber: "",
   agent: "",
   inboundGroup: "",
+  logType: "",
+  defaultLogPath: "",
+  customLogPath: "",
 };
 
 type Action =
@@ -101,6 +104,15 @@ export function SearchFiltersProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const isValid = useMemo(() => {
+
+    if (filters.tier === "web") {
+    return Boolean( filters.servers.length > 0 && filters.logType &&
+      (
+        (filters.customLogPath ?? "").trim() ||
+        (filters.defaultLogPath ?? "").trim()
+      )
+    );
+  }
     const hasSearchTerm = [
       filters.leadId,
       filters.campaignId,
@@ -115,6 +127,7 @@ export function SearchFiltersProvider({ children }: { children: ReactNode }) {
   }, [filters]);
 
   console.log("Provider Filters:", filters);
+  console.table(filters);
   const value = useMemo(
     () => ({ filters, setField, setTier, reset, isValid }),
     [filters, setField, setTier, reset, isValid]

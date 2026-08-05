@@ -9,6 +9,7 @@ import DateRangeSection from "./components/DateRangeSection";
 import TierSection from "./components/TierSection";
 import ServerSelection from "./components/ServerSelection";
 import SearchFields from "./components/SearchFields";
+import LogTypeSection from "./components/LogTypeSection";
 import ActionButtons from "./components/ActionButtons";
 import type { LogFetchResponse } from "@/lib/log-analysis/types";
 
@@ -41,6 +42,7 @@ export default function SearchFilterCard({
         <DateRangeSection />
         <TierSection />
         <ServerSelection />
+        <LogTypeSection />
         <SearchFields />
       </div>
 
