@@ -15,6 +15,7 @@ from app.schemas.log_analysis import (
     SearchFiltersRequest,
 )
 from app.services import log_analysis_service, permission_service
+from app.schemas.log_analysis import WebLogFetchResponse
 
 router = APIRouter()
 
@@ -32,11 +33,40 @@ async def fetch_logs(request: SearchFiltersRequest) -> LogFetchResponse:
     print()
 
     print("Request dict:")
-    print(request.model_dump())   # Pydantic v2
-    # print(request.dict())       # Pydantic v1
+    print(request.model_dump())
 
     print("=" * 80)
+
     try:
+
+        #
+        # Phase 2 - WEB LOG ANALYZER
+        #
+        if request.tier == "web":
+            print("WEB TIER DETECTED")
+            print("=" * 80)
+
+            return await log_analysis_service.fetch_web_logs(request)
+
+        #
+        # Existing Telephony Flow
+        #
         return await log_analysis_service.fetch_logs(request)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    except ValueError as exc:  raise HTTPException(
+                                    status_code=400,
+                                    detail=str(exc)
+                                ) from exc
+
+from app.schemas.log_analysis import WebLogFetchResponse
+# or wherever your schema lives
+
+@router.post(
+    "/fetch-web",
+    response_model=WebLogFetchResponse,
+)
+async def fetch_web_logs(
+    request: SearchFiltersRequest,
+) -> WebLogFetchResponse:
+
+    return await log_analysis_service.fetch_web_logs(request)

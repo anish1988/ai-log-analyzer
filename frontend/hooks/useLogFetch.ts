@@ -4,6 +4,7 @@ import { useCallback, useReducer } from "react";
 import { useRouter } from "next/navigation";
 import type {
   LogFetchResponse,
+  WebLogFetchResponse,
   PermissionCheckResponse,
   SearchFiltersState,
 } from "@/lib/log-analysis/types";
@@ -20,14 +21,14 @@ type Status =
 interface State {
   status: Status;
   message: string | null;
-  data: LogFetchResponse | null;
+  data: LogFetchResponse | WebLogFetchResponse | null;
 }
 
 type Action =
   | { type: "START_PERMISSION_CHECK" }
   | { type: "PERMISSION_DENIED"; message: string }
   | { type: "START_FETCH" }
-  | { type: "FETCH_SUCCESS"; data: LogFetchResponse }
+  | { type: "FETCH_SUCCESS"; data: LogFetchResponse | WebLogFetchResponse}
   | { type: "FETCH_ERROR"; message: string }
   | { type: "RESET" };
 
@@ -76,7 +77,9 @@ export function useLogFetch() {
 
       dispatch({ type: "START_FETCH" });
       try {
-        const fetchRes = await fetch(`${API}/api/logs/fetch`, {
+        const endpoint = filters.tier === "web" ? "/api/logs/fetch-web" : "/api/logs/fetch";
+
+        const fetchRes = await fetch(`${API}${endpoint}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(filters),
@@ -87,7 +90,7 @@ export function useLogFetch() {
           throw new Error(err?.message ?? "Failed to fetch logs.");
         }
 
-        const data: LogFetchResponse = await fetchRes.json();
+        const data: LogFetchResponse | WebLogFetchResponse = await fetchRes.json();
         console.log("======================================");
         console.log("        AI LOG ANALYZER RESPONSE      ");
         console.log("======================================");

@@ -32,19 +32,25 @@ services:
 
     volumes:
       - ./backend:/app
-      #- ./local-test-logs:/var/log
+      # Mount the host filesystem read-only
+      - /:/host_fs:ro
+     # - ./local-test-logs:/var/log
      # - C:/Users/anish.rai/Downloads/id_rsa:/secrets/id_rsa:ro
       # Apache Logs
-      - /var/log/apache2:/host_logs/apache2:ro
+    #  - /var/log/apache2:/host_logs/apache2:ro
+      - /var/log/apache2:/var/log/apache2:ro
 
      # Asterisk Logs (later)
-      - /var/log/asterisk:/host_logs/asterisk:ro
+    #  - /var/log/asterisk:/host_logs/asterisk:ro
+      - /var/log/asterisk:/var/log/asterisk:ro
+      - /var/log/astguiclient:/var/log/astguiclient:ro
 
      # MySQL Logs (later)
-      - /var/log/mysql:/host_logs/mysql:ro
+   #   - /var/log/mysql:/host_logs/mysql:ro
+      - /var/log/mysql:/var/log/mysql:ro
 
     environment:
-      LOCAL_LOG_ROOT: /host_logs
+      LOCAL_LOG_ROOT: /host_fs
 
     env_file:
       - .env

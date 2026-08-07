@@ -11,18 +11,30 @@ import asyncio
 from datetime import datetime
 
 from app.config.log_files import LogFileConfig, get_log_files_for_tier
-from app.config.servers import ServerConfig, get_selectable_servers, get_server_by_id
+from app.config.servers import ServerConfig, get_selectable_servers, get_server_by_id, SERVER_REGISTRY
 from app.log_fetchers.local_client import search_local_file
 from app.log_fetchers.path_resolver import each_day, resolve_log_file_candidates
 from app.log_fetchers.ssh_client import search_remote_file
 from app.log_parsers.dedupe import dedupe_log_lines
+from app.log_fetchers.web_log_fetcher import read_web_log
 from app.schemas.log_analysis import (
     LogFetchResponse,
     LogFileResultSchema,
     LogLineSchema,
     SearchFiltersRequest,
 )
+from app.schemas.log_analysis import (
+    SearchFiltersRequest,
+    WebLogFetchResponse,
+    WebLogFileSchema,
+    WebErrorBlockSchema,
+    WebLogLineSchema,
+)
 import logging
+from pathlib import Path
+from app.services.web_log_processor import WebLogProcessor
+
+
 
 logger = logging.getLogger(__name__)
 LOCAL_HOSTS = {"local", "localhost", "127.0.0.1"}
@@ -268,3 +280,482 @@ async def fetch_logs(filters: SearchFiltersRequest) -> LogFetchResponse:
         results=result_buckets,
     )
 
+
+from app.schemas.log_analysis import (
+    SearchFiltersRequest,
+    LogFetchResponse,
+)
+
+
+async def fetch_web_logs11(
+    request: SearchFiltersRequest,
+) -> LogFetchResponse:
+    """
+    Web Log Analyzer
+
+    Flow:
+        UI
+            ↓
+        Validate Request
+            ↓
+        Resolve Server
+            ↓
+        Read Log File
+            ↓
+        Return Response
+    """
+
+    print("\n")
+    print("=" * 100)
+    print("WEB LOG ANALYZER")
+    print("=" * 100)
+
+    print(f"Tier              : {request.tier}")
+    print(f"Servers           : {request.servers}")
+    print(f"Log Type          : {request.log_type}")
+    print(f"Default Path      : {request.default_path}")
+    print(f"Custom Path       : {request.custom_path}")
+
+    # ------------------------------------------------------------------
+    # Decide actual log path
+    # ------------------------------------------------------------------
+
+    actual_path = (
+        request.custom_path.strip()
+        if request.custom_path and request.custom_path.strip()
+        else request.default_path
+    )
+
+    print(f"Actual Path       : {actual_path}")
+
+    print("=" * 100)
+
+    # ------------------------------------------------------------------
+    # Validation
+    # ------------------------------------------------------------------
+
+    if not request.servers:
+        raise ValueError("Please select at least one server.")
+
+    if not request.log_type:
+        raise ValueError("Please select Log Type.")
+
+    if not actual_path:
+        raise ValueError("Log path cannot be empty.")
+
+    # ------------------------------------------------------------------
+    # Read logs from selected server(s)
+    # ------------------------------------------------------------------
+
+    total_lines = 0
+    results = []
+
+    for server_id in request.servers:
+
+        print("\n")
+        print("=" * 80)
+        print(f"Processing Server : {server_id}")
+        print("=" * 80)
+
+        #
+        # Resolve Server
+        #
+        server = next(
+            (
+                s
+                for s in SERVER_REGISTRY
+                if s.id == server_id
+            ),
+            None,
+        )
+
+        if server is None:
+            print(f"Server not found : {server_id}")
+            continue
+
+        print(f"Server Name : {server.id}")
+        print(f"Server IP   : {server.ip}")
+        print(f"SSH User    : {server.ssh_user}")
+
+        #
+        # Read log file
+        #
+        lines = await read_web_log(
+            server=server,
+            log_path=actual_path,
+        )
+
+        print("-" * 80)
+        print(f"Lines Read : {len(lines)}")
+        print("-" * 80)
+
+        #
+        # Preview first few lines
+        #
+        for index, line in enumerate(lines[:10], start=1):
+            print(f"{index:03d}: {line}")
+
+        total_lines += len(lines)
+
+        #
+        # Temporary Result
+        #
+        # Later we'll replace this with
+        # parsed error JSON
+        #
+        results.append(
+            {
+                "server": server.id,
+                "path": actual_path,
+                "line_count": len(lines),
+            }
+        )
+
+    print("\n")
+    print("=" * 100)
+    print("WEB ANALYZER COMPLETED")
+    print("=" * 100)
+    print(f"Servers Processed : {len(results)}")
+    print(f"Total Lines       : {total_lines}")
+    print("=" * 100)
+
+    #
+    # Temporary Response
+    #
+    # We keep LogFetchResponse
+    # because frontend already expects it.
+    #
+
+    return LogFetchResponse(
+        total_lines=total_lines,
+        results=[],
+    )
+    """
+    Phase 2
+
+    Web Log Analyzer
+
+    Current Version:
+    ----------------
+    ✔ Validate request
+    ✔ Determine actual log path
+    ✔ Print debug information
+    ✔ Return empty response
+
+    Next Version:
+    -------------
+    - SSH connection
+    - Read selected log file
+    - Parse log
+    - Build JSON response
+    """
+
+    print("\n")
+    print("=" * 100)
+    print("WEB LOG ANALYZER")
+    print("=" * 100)
+
+    #
+    # Tier
+    #
+    print(f"Tier              : {request.tier}")
+
+    #
+    # Cluster(s)
+    #
+    print(f"Selected Servers  : {request.servers}")
+
+    #
+    # Log Type
+    #
+    print(f"Log Type          : {request.log_type}")
+
+    #
+    # Configured Path
+    #
+    print(f"Default Path      : {request.default_path}")
+
+    #
+    # User Override
+    #
+    print(f"Custom Path       : {request.custom_path}")
+
+    #
+    # Decide actual path
+    #
+    actual_path = (
+        request.custom_path.strip()
+        if request.custom_path and request.custom_path.strip()
+        else request.default_path
+    )
+
+    server = next(
+    ( s for s in SERVER_REGISTRY if s.id == request.servers[0]),
+    None,
+    )
+
+    if server is None:
+        raise ValueError(
+            f"Server not found : {request.servers[0]}"
+        )
+
+    print(f"Resolved Server : {server.id}")
+    print(f"Server IP       : {server.ip}")
+
+    print(f"Actual Path       : {actual_path}")
+
+    print("=" * 100)
+
+    #
+    # Validation
+    #
+    if not request.servers:
+        raise ValueError("Please select at least one server.")
+
+    if not request.log_type:
+        raise ValueError("Please select Log Type.")
+
+    if not actual_path:
+        raise ValueError("Log path cannot be empty.")
+
+    #
+    # Next Step
+    #
+    print("Next Step : Read log file from SSH server...")
+    print("=" * 100)
+
+    #
+    # Temporary Response
+    #
+    return LogFetchResponse(
+        total_lines=0,
+        results=[]
+    )
+
+
+
+
+async def fetch_web_logs(
+    request: SearchFiltersRequest,
+) -> WebLogFetchResponse:
+
+    print("\n")
+    print("=" * 100)
+    print("WEB LOG ANALYZER START")
+    print("=" * 100)
+    print("\n")
+    print("=" * 100)
+    print("STEP-1 : REQUEST RECEIVED")
+    print("=" * 100)
+
+    print(request.model_dump())
+
+    from app.config.web_logs import debug_web_logs
+
+    debug_web_logs()
+
+    #
+    # Validation
+    #
+    if not request.servers:
+        raise ValueError("Please select at least one server.")
+
+    if not request.log_type:
+        raise ValueError("Please select Log Type.")
+
+    from app.config.web_logs import WEB_LOG_PATHS
+
+    #
+    # Resolve actual path from backend config
+    #
+    config = WEB_LOG_PATHS.get(request.log_type)
+    print("\n")
+    print("=" * 100)
+    print("STEP-3 : BACKEND CONFIG")
+    print("=" * 100)
+
+    print(config)
+
+    if config is None:
+        raise ValueError(f"Unsupported log type: {request.log_type}")
+
+    #
+    # User entered custom path?
+    #
+    if request.custom_path and request.custom_path.strip():
+
+        actual_path = request.custom_path.strip()
+
+        print("Using Custom Path")
+
+    else:
+
+        actual_path = config["path"]
+
+        print("Using Backend Config Path")
+
+    print(f"Resolved Path : {actual_path}")
+
+    if not actual_path:
+        raise ValueError("Log path is empty.")
+
+    print("\nREQUEST DETAILS")
+    print("-" * 100)
+    print(f"Tier             : {request.tier}")
+    print(f"Servers          : {request.servers}")
+    print(f"Log Type         : {request.log_type}")
+    print(f"Default Path     : {request.default_path}")
+    print(f"Custom Path      : {request.custom_path}")
+    print(f"Actual Path      : {actual_path}")
+
+    processor = WebLogProcessor()
+
+    response_files: list[WebLogFileSchema] = []
+
+    #
+    # Process every selected server
+    #
+    for server_id in request.servers:
+
+        print("\n")
+        print("=" * 100)
+        print(f"PROCESSING SERVER : {server_id}")
+        print("=" * 100)
+
+        server = next(
+            (s for s in SERVER_REGISTRY if s.id == server_id),
+            None,
+        )
+
+        if server is None:
+            print(f"❌ Server not found : {server_id}")
+            continue
+
+        print("✅ Server Found")
+        print(f"Server ID    : {server.id}")
+        print(f"Server Label : {server.label}")
+        print(f"Server IP    : {server.ip}")
+        print(f"SSH User     : {server.ssh_user}")
+
+        #
+        # Read file
+        #
+        print("\nREADING LOG FILE...")
+        print("-" * 100)
+
+        raw_lines = await read_web_log(
+            server=server,
+            log_path=actual_path,
+        )
+
+        print(f"Returned Object Type : {type(raw_lines)}")
+        print(f"Total Lines Read     : {len(raw_lines)}")
+
+        if raw_lines:
+
+            print("\nFIRST LINE")
+            print(raw_lines[0])
+
+            print("\nLAST LINE")
+            print(raw_lines[-1])
+
+        else:
+
+            print("❌ No lines returned from read_web_log()")
+            continue
+
+        #
+        # Processor
+        #
+        print("\n")
+        print("=" * 100)
+        print("CALLING WEB LOG PROCESSOR")
+        print("=" * 100)
+
+        response = processor.process(
+            server=server.id,
+            log_type=request.log_type,
+            file_path=actual_path,
+            raw_lines=raw_lines,
+        )
+
+        print("\nPROCESSOR RAW RESPONSE")
+        print("-" * 100)
+        print(response.model_dump())
+
+        print("\nPROCESSOR SUMMARY")
+        print("-" * 100)
+        print(f"Success : {response.success}")
+        print(f"Message : {response.message}")
+        print(f"Files   : {len(response.results)}")
+
+        if response.results:
+
+            for idx, file in enumerate(response.results, start=1):
+
+                print("\n")
+                print(f"FILE #{idx}")
+                print("-" * 60)
+
+                print(f"Server        : {file.server}")
+                print(f"File Name     : {file.file_name}")
+                print(f"File Path     : {file.file_path}")
+                print(f"Total Lines   : {file.total_lines}")
+                print(f"Total Errors  : {file.total_errors}")
+
+                if file.errors:
+
+                    print(f"First Error ID : {file.errors[0].error_id}")
+                    print(f"First Error Title : {file.errors[0].title}")
+                    print(f"First Error Lines : {file.errors[0].total_lines}")
+
+        else:
+
+            print("❌ Processor returned empty results")
+
+        #
+        # Merge response
+        #
+        response_files.extend(response.results)
+
+        print("\nAFTER MERGE")
+        print("-" * 100)
+        print(f"Current Total Files : {len(response_files)}")
+
+    #
+    # Final Summary
+    #
+    print("\n")
+    print("=" * 100)
+    print("FINAL RESPONSE")
+    print("=" * 100)
+
+    print(f"Total Response Files : {len(response_files)}")
+
+    if response_files:
+
+        for idx, file in enumerate(response_files, start=1):
+
+            print("\n")
+            print(f"FILE #{idx}")
+            print("-" * 60)
+
+            print(f"Server       : {file.server}")
+            print(f"File Name    : {file.file_name}")
+            print(f"Total Lines  : {file.total_lines}")
+            print(f"Total Errors : {file.total_errors}")
+
+    else:
+
+        print("❌ No response files generated.")
+
+    print("\n")
+    print("=" * 100)
+    print("WEB LOG ANALYZER END")
+    print("=" * 100)
+
+    return WebLogFetchResponse(
+        success=True,
+        message="Web Log Analysis Completed Successfully.",
+        results=response_files,
+    )
