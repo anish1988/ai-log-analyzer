@@ -24,7 +24,9 @@ logger = logging.getLogger(__name__)
 @dataclass(frozen=True)
 class ResolvedLogPath:
     service: str
+    directory: str
     filename: str
+    full_path: str
     is_gzipped: bool
     is_dated: bool
 
