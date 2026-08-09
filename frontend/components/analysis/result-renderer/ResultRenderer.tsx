@@ -16,18 +16,20 @@ interface ResultRendererProps {
         | LogFetchResponse
         | WebLogFetchResponse;
 
+    onBack: () => void;    
 }
 
 export default function ResultRenderer({
   tier,
   data,
+  onBack,
 }: ResultRendererProps) {
   switch (tier) {
     case "web":
-      return <WebResult data={data} />;
+      return <WebResult data={data} onBack={onBack} />;
 
     case "telephony":
-      return <TelephonyResult data={data} />;
+      return <TelephonyResult data={data} onBack={onBack} />;
 
     default:
       return (

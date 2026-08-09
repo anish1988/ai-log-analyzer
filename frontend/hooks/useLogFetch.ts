@@ -58,7 +58,11 @@ export function useLogFetch() {
   const router = useRouter();
 
   const run = useCallback(
-    async (filters: SearchFiltersState) => {
+    async (filters: SearchFiltersState): Promise<
+        LogFetchResponse
+        | WebLogFetchResponse
+        | null
+    > => {
       dispatch({ type: "START_PERMISSION_CHECK" });
 
       const permissionRes = await fetch(`${API}/api/logs/permission`, {
@@ -72,7 +76,7 @@ export function useLogFetch() {
         const message = permission?.message ?? "Permission is required to access the selected servers.";
         dispatch({ type: "PERMISSION_DENIED", message });
         router.push(`/new-analysis?step=1&error=${encodeURIComponent(message)}`);
-        return;
+        return null;
       }
 
       dispatch({ type: "START_FETCH" });
@@ -118,11 +122,13 @@ export function useLogFetch() {
 
         console.log("======================================");
         dispatch({ type: "FETCH_SUCCESS", data });
+        return data;
       } catch (err) {
         dispatch({
           type: "FETCH_ERROR",
           message: err instanceof Error ? err.message : "Unknown error while fetching logs.",
         });
+        return null;
       }
     },
     [router]

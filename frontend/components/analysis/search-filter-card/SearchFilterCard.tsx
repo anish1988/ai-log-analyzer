@@ -57,8 +57,13 @@ export default function SearchFilterCard({
       {/* Search Button */}
       <ActionButtons
         status={status}
-        onNext={() => run(filters)}
-      />
+        onNext={async () => {
+            const response = await run(filters);
+            if (response) {
+                onNext?.(response);
+            }
+        }}
+    />
 
       {/* Error */}
       {status === "error" && (
