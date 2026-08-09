@@ -11,11 +11,19 @@ import ServerSelection from "./components/ServerSelection";
 import SearchFields from "./components/SearchFields";
 import LogTypeSection from "./components/LogTypeSection";
 import ActionButtons from "./components/ActionButtons";
-import type { LogFetchResponse } from "@/lib/log-analysis/types";
+import type {
+  LogFetchResponse,
+  WebLogFetchResponse,
+} from "@/lib/types/preview";
 
 export interface SearchFilterCardProps {
-  //onNext?: () => void;
-  onNext?: (data: LogFetchResponse) => void;
+
+  onNext?: (
+    data:
+      | LogFetchResponse
+      | WebLogFetchResponse
+  ) => void;
+
 }
 
 export default function SearchFilterCard({
