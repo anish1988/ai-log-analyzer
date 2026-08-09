@@ -3,9 +3,19 @@
 import WebResult from "../web-result/WebResult";
 import TelephonyResult from "../telephony-result/TelephonyResult";
 
+import type {
+    LogFetchResponse,
+    WebLogFetchResponse,
+} from "@/lib/types/preview";
+
 interface ResultRendererProps {
-  tier: string;
-  data: any;
+
+    tier:string;
+
+    data:
+        | LogFetchResponse
+        | WebLogFetchResponse;
+
 }
 
 export default function ResultRenderer({

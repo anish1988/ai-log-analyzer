@@ -111,3 +111,75 @@ export interface SessionStat {
   value: number;
   severity: SessionSeverity;
 }
+
+// ============================================================================
+// Web Log Response Types
+// ============================================================================
+
+/**
+ * One physical log line.
+ */
+export interface WebLogLine {
+
+  line_number: number;
+
+  raw: string;
+
+}
+
+/**
+ * One complete parsed error.
+ */
+export interface WebErrorBlock {
+
+  error_id: string;
+
+  title: string;
+
+  severity: string;
+
+  start_line: number;
+
+  end_line: number;
+
+  total_lines: number;
+
+  timestamp?: string | null;
+
+  lines: WebLogLine[];
+
+}
+
+/**
+ * One analyzed log file.
+ */
+export interface WebLogFile {
+
+  server: string;
+
+  log_type: string;
+
+  file_name: string;
+
+  file_path: string;
+
+  total_lines: number;
+
+  total_errors: number;
+
+  errors: WebErrorBlock[];
+
+}
+
+/**
+ * Backend response
+ */
+export interface WebLogFetchResponse {
+
+  success: boolean;
+
+  message: string;
+
+  results: WebLogFile[];
+
+}
