@@ -19,6 +19,7 @@ export default function Stepper({
             step={step.id}
             title={step.title}
             active={step.id === currentStep}
+            completed={step.id < currentStep}
           />
         ))}
 

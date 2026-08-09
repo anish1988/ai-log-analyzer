@@ -2,17 +2,19 @@ interface StepItemProps {
   step: number;
   title: string;
   active: boolean;
+  completed: boolean;
 }
 
 export default function StepItem({
   step,
   title,
   active,
+  completed,
 }: StepItemProps) {
   return (
     <div className="flex flex-col items-center flex-1">
 
-      <div
+    <div
         className={`
           flex
           h-10
@@ -23,21 +25,25 @@ export default function StepItem({
           text-sm
           font-semibold
           ${
-            active
+            completed
+              ? "bg-green-600 text-white"
+              : active
               ? "bg-indigo-600 text-white"
               : "bg-slate-200 text-slate-600"
           }
         `}
       >
-        {step}
-      </div>
+  {completed ? "✓" : step}
+</div>
 
       <p
-        className={`
+       className={`
           mt-2
           text-sm
           ${
-            active
+            completed
+              ? "font-semibold text-green-600"
+              : active
               ? "font-semibold text-indigo-600"
               : "text-slate-500"
           }

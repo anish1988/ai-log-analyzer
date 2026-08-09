@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { SearchFiltersProvider } from "@/providers/SearchFiltersProvider";
+import { SearchFiltersProvider, SearchFiltersState } from "@/providers/SearchFiltersProvider";
 import SearchFilterCard from "@/components/analysis/search-filter-card/SearchFilterCard";
 import type {
   LogFetchResponse,
@@ -10,19 +10,39 @@ import type {
 } from "@/lib/types/preview";
 
 import ResultRenderer from "@/components/analysis/result-renderer/ResultRenderer";
+import Stepper from "@/components/stepper/Stepper";
+import { buildRequestSignature } from "@/lib/utils/requestSignature";
+import { AnalysisCache } from "@/lib/types/analysisCache";
 // import PreviewSession from "@/components/analysis/preview-session/PreviewSession";
 
 export default function NewAnalysisPage() {
   const [step, setStep] = useState(1);
+  const goToStep1 = () => {
+  setStep(1);
+};
+
+const goToStep2 = () => {
+  setStep(2);
+};
   const [analysisResult, setAnalysisResult] = useState<LogFetchResponse | WebLogFetchResponse | null>(null);
+const [requestSignature, setRequestSignature] =
+  useState("");
+
+const [cachedFilters, setCachedFilters] =
+  useState<SearchFiltersState | null>(null);
+  const [analysisCache, setAnalysisCache] =
+    useState<AnalysisCache | null>(null);
+
   return (
     <SearchFiltersProvider>
-      <div className="mx-auto max-w-4xl px-6 py-8">
+      <div className="mx-auto max-w-7xl px-6 py-8">
+        <Stepper currentStep={step} />
+        <div className="mt-8">
         {step === 1 && (
           
           // <SearchFilterCard  onNext={(response) => {  setAnalysisResult(response);  setStep(2);  }} />
           <SearchFilterCard
-    onNext={(response) => {
+        onNext={(response) => {
 
         console.log("=================================");
         console.log("STEP-2");
@@ -31,7 +51,7 @@ export default function NewAnalysisPage() {
 
         setAnalysisResult(response);
 
-        setStep(2);
+        goToStep2();
 
     }}
 />
@@ -44,8 +64,10 @@ export default function NewAnalysisPage() {
           <ResultRenderer
               tier={analysisResult.success ? "web" : "telephony"}
               data={analysisResult}
+              onBack={goToStep1}
           />
     )}
+    </div>
       </div>
     </SearchFiltersProvider>
   );

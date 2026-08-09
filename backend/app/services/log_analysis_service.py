@@ -683,6 +683,12 @@ async def fetch_web_logs(
         #
         # Select Parser
         #
+        print("=" * 100)
+        print("PARSER DEBUG")
+        print("=" * 100)
+        print(f"Request Log Type : {request.log_type}")
+        print(f"Selected Log Type : {log_type if 'log_type' in locals() else 'N/A'}")
+        print("=" * 100)
         parser = ParserFactory.get_parser(
             request.log_type,
         )

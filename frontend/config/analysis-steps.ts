@@ -6,18 +6,18 @@ export interface AnalysisStep {
 export const analysisSteps: AnalysisStep[] = [
   {
     id: 1,
-    title: "Search Filters",
+    title: "Search Logs",
   },
   {
     id: 2,
-    title: "Additional Info",
+    title: "Error Preview",
   },
   {
     id: 3,
-    title: "Review",
+    title: "AI Analysis",
   },
   {
     id: 4,
-    title: "Analysis",
+    title: "Summary",
   },
 ];
