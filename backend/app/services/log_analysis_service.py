@@ -33,6 +33,7 @@ from app.schemas.log_analysis import (
 import logging
 from pathlib import Path
 from app.services.web_log_processor import WebLogProcessor
+from app.parsers.parser_factory import ParserFactory
 
 
 
@@ -608,7 +609,7 @@ async def fetch_web_logs(
     print(f"Custom Path      : {request.custom_path}")
     print(f"Actual Path      : {actual_path}")
 
-    processor = WebLogProcessor()
+   # processor = WebLogProcessor()
 
     response_files: list[WebLogFileSchema] = []
 
@@ -672,12 +673,42 @@ async def fetch_web_logs(
         print("CALLING WEB LOG PROCESSOR")
         print("=" * 100)
 
-        response = processor.process(
-            server=server.id,
-            log_type=request.log_type,
-            file_path=actual_path,
-            raw_lines=raw_lines,
+      #  response = processor.process(
+       #     server=server.id,
+        #    log_type=request.log_type,
+        #    file_path=actual_path,
+        #    raw_lines=raw_lines,
+        #)
+
+        #
+        # Select Parser
+        #
+        parser = ParserFactory.get_parser(
+            request.log_type,
         )
+
+        print("=" * 100)
+        print("START PARSING")
+        print("=" * 100)
+
+        response = parser.parse(
+
+            server=server.id,
+
+            log_type=request.log_type,
+
+            file_name=Path(actual_path).name,
+
+            file_path=actual_path,
+
+            raw_lines=raw_lines,
+
+        )
+
+        print("=" * 100)
+        print("PARSING COMPLETED")
+        print("=" * 100)
+        print(f"Total Errors : {response.total_errors}")
 
         print("\nPROCESSOR RAW RESPONSE")
         print("-" * 100)
@@ -685,38 +716,16 @@ async def fetch_web_logs(
 
         print("\nPROCESSOR SUMMARY")
         print("-" * 100)
-        print(f"Success : {response.success}")
-        print(f"Message : {response.message}")
-        print(f"Files   : {len(response.results)}")
-
-        if response.results:
-
-            for idx, file in enumerate(response.results, start=1):
-
-                print("\n")
-                print(f"FILE #{idx}")
-                print("-" * 60)
-
-                print(f"Server        : {file.server}")
-                print(f"File Name     : {file.file_name}")
-                print(f"File Path     : {file.file_path}")
-                print(f"Total Lines   : {file.total_lines}")
-                print(f"Total Errors  : {file.total_errors}")
-
-                if file.errors:
-
-                    print(f"First Error ID : {file.errors[0].error_id}")
-                    print(f"First Error Title : {file.errors[0].title}")
-                    print(f"First Error Lines : {file.errors[0].total_lines}")
-
-        else:
-
-            print("❌ Processor returned empty results")
+        print(f"Server        : {response.server}")
+        print(f"Log Type      : {response.log_type}")
+        print(f"File Name     : {response.file_name}")
+        print(f"Total Lines   : {response.total_lines}")
+        print(f"Total Errors  : {response.total_errors}")
 
         #
         # Merge response
         #
-        response_files.extend(response.results)
+        response_files.append(response)
 
         print("\nAFTER MERGE")
         print("-" * 100)
