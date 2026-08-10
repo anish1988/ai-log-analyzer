@@ -12,3 +12,9 @@ typing-inspection==0.4.2
 typing_extensions==4.16.0
 uvicorn==0.51.0
 asyncssh>=2.14.0
+langchain
+langgraph
+langchain-openai
+langchain-postgres
+pgvector
+psycopg[binary]
