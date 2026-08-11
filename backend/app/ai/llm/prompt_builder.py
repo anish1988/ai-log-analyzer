@@ -1,10 +1,5 @@
 """
 Prompt construction for AI log analysis.
-
-This file provides the common prompt structure.
-
-Log-type-specific instructions are provided by the
-individual analyzer classes.
 """
 
 import json
@@ -20,19 +15,6 @@ class PromptBuilder:
         log_type: str,
         historical_context: dict[str, Any] | None = None,
     ) -> str:
-        """
-        Build the user-side analysis prompt.
-
-        The prompt contains the actual error information.
-
-        Historical RAG information is optional because:
-
-            LLM_REQUIRED
-                → no historical match may exist.
-
-            REVIEW
-                → historical information should be included.
-        """
 
         lines = error.get(
             "lines",
@@ -43,26 +25,30 @@ class PromptBuilder:
 
         for line in lines:
 
-            if isinstance(
+            if not isinstance(
                 line,
                 dict,
             ):
+                continue
 
-                important_lines.append(
-                    {
-                        "line_number": line.get(
-                            "line_number"
-                        ),
-                        "raw": line.get(
-                            "raw"
-                        ),
-                    }
-                )
+            important_lines.append(
+                {
+                    "line_number": line.get(
+                        "line_number"
+                    ),
+
+                    "content": line.get(
+                        "raw"
+                    ),
+                }
+            )
 
         payload = {
+
             "log_type": log_type,
 
-            "error": {
+            "current_error": {
+
                 "error_id": error.get(
                     "error_id"
                 ),
@@ -79,6 +65,10 @@ class PromptBuilder:
                     "timestamp"
                 ),
 
+                "tier": error.get(
+                    "tier"
+                ),
+
                 "server": error.get(
                     "server"
                 ),
@@ -87,12 +77,20 @@ class PromptBuilder:
                     "file_name"
                 ),
 
+                "file_path": error.get(
+                    "file_path"
+                ),
+
                 "start_line": error.get(
                     "start_line"
                 ),
 
                 "end_line": error.get(
                     "end_line"
+                ),
+
+                "total_lines": error.get(
+                    "total_lines"
                 ),
 
                 "error_content": error.get(
@@ -109,10 +107,25 @@ class PromptBuilder:
             ),
         }
 
-        return (
-            "Analyze the following log error.\n\n"
-            "The response must follow the required "
-            "structured analysis format.\n\n"
-            "Input data:\n"
-            f"{json.dumps(payload, indent=2, default=str)}"
-        )
+        return f"""
+Perform a detailed root-cause analysis of the supplied
+{log_type} error.
+
+Use the system instructions as the analysis contract.
+
+CURRENT ERROR DATA
+==================
+
+{json.dumps(
+    payload,
+    indent=2,
+    default=str,
+)}
+
+IMPORTANT:
+- Use the supplied log lines as primary evidence.
+- Do not invent source-code locations.
+- Do not treat historical RAG information as automatically correct.
+- Clearly identify missing information.
+- Return the requested structured response.
+"""

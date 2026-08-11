@@ -17,7 +17,9 @@ import os
 from typing import Any
 
 import psycopg
-from pgvector.psycopg import register_vector_async
+#from pgvector.psycopg import register_vector_async
+#from pgvector import Vector
+from pgvector.psycopg import Vector, register_vector_async
 
 from app.ai.graph.state import RAGMatch
 
@@ -172,8 +174,14 @@ class RAGRetriever:
 
                 conditions: list[str] = []
 
+                query_embedding = Vector(embedding)
+
+                print(
+                    f"Query Vector Type : {type(query_embedding).__name__}"
+                )
+
                 parameters: dict[str, Any] = {
-                    "embedding": embedding,
+                    "embedding": query_embedding,
                     "limit": limit,
                     "min_similarity": min_similarity,
                 }

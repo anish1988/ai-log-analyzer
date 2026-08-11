@@ -1,21 +1,25 @@
 """
 Central LLM service.
 
-This class is responsible only for communicating with the LLM.
+Responsible only for communicating with the LLM.
 
-It does NOT:
-    - decide which prompt to use
-    - perform RAG
-    - analyze log types
-    - build Jira descriptions
-    - decide whether a RAG result should be reused
+The service supports:
 
-Those responsibilities belong to higher-level components.
+    1. Raw text responses
+    2. Structured Pydantic responses
 """
 
-from typing import Any
+import os
+from typing import TypeVar
 
 from langchain_openai import ChatOpenAI
+from pydantic import BaseModel
+
+
+T = TypeVar(
+    "T",
+    bound=BaseModel,
+)
 
 
 class LLMService:
@@ -23,16 +27,26 @@ class LLMService:
     def __init__(
         self,
         *,
-        model: str = "gpt-5.6",
+        model: str | None = None,
         temperature: float = 0.0,
     ) -> None:
+
+        self.model = (
+            model
+            or os.getenv(
+                "OPENAI_MODEL",
+                "gpt-5.4",
+            )
+        )
+
+        self.temperature = temperature
 
         print("=" * 100)
         print("LLM SERVICE INITIALIZATION")
         print("=" * 100)
 
         print(
-            f"LLM Model  : {model}"
+            f"LLM Model  : {self.model}"
         )
 
         print(
@@ -40,7 +54,7 @@ class LLMService:
         )
 
         self.llm = ChatOpenAI(
-            model=model,
+            model=self.model,
             temperature=temperature,
         )
 
@@ -51,9 +65,7 @@ class LLMService:
         user_prompt: str,
     ) -> str:
         """
-        Send a prompt to the LLM and return the raw response.
-
-        Structured parsing is intentionally handled separately.
+        Return a raw text response.
         """
 
         print("=" * 100)
@@ -102,3 +114,75 @@ class LLMService:
         )
 
         return content
+
+    async def analyze_structured(
+        self,
+        *,
+        system_prompt: str,
+        user_prompt: str,
+        response_schema: type[T],
+    ) -> T:
+        """
+        Return a validated Pydantic response.
+
+        The LLM is constrained to the supplied schema.
+        """
+
+        print("=" * 100)
+        print("STRUCTURED LLM REQUEST")
+        print("=" * 100)
+
+        print(
+            f"Schema : "
+            f"{response_schema.__name__}"
+        )
+
+        print(
+            f"System Prompt Length : "
+            f"{len(system_prompt)}"
+        )
+
+        print(
+            f"User Prompt Length   : "
+            f"{len(user_prompt)}"
+        )
+
+        structured_llm = (
+            self.llm.with_structured_output(
+                response_schema
+            )
+        )
+
+        result = await structured_llm.ainvoke(
+            [
+                (
+                    "system",
+                    system_prompt,
+                ),
+                (
+                    "user",
+                    user_prompt,
+                ),
+            ]
+        )
+
+        if not isinstance(
+            result,
+            response_schema,
+        ):
+
+            raise TypeError(
+                "LLM returned an unexpected "
+                "structured response type."
+            )
+
+        print("=" * 100)
+        print("STRUCTURED LLM RESPONSE RECEIVED")
+        print("=" * 100)
+
+        print(
+            f"Schema : "
+            f"{response_schema.__name__}"
+        )
+
+        return result
