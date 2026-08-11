@@ -266,6 +266,8 @@ class AIAnalysisState(TypedDict, total=False):
     rag_confidence: str
 
     rag_reuse_solution: bool
+    rag_decision: str
+    rag_result: dict[str, Any] | None
 
 
     # =========================================================================
@@ -326,3 +328,4 @@ class AIAnalysisState(TypedDict, total=False):
     messages: list[str]
 
     error: str | None
+

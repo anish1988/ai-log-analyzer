@@ -1,0 +1,3 @@
+"""
+Structured AI response schemas.
+"""

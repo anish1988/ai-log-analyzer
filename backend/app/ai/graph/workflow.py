@@ -1,22 +1,36 @@
 """
 LangGraph AI Analysis Workflow.
 
-Step 3.7
+Step 3.10
 
-This workflow connects the components created in previous steps:
+This workflow connects:
 
     1. Prepare selected errors
     2. Build embedding text
     3. Generate embedding
     4. Retrieve similar historical issues
     5. Run RAG decision engine
-    6. Reuse historical resolution OR mark for future LLM processing
+    6. Reuse historical resolution OR run LLM analysis
     7. Move to the next selected error
     8. Produce final results
 
-The actual LLM analysis is intentionally NOT implemented here yet.
+The actual LLM analysis is now integrated through:
 
-That will be added in the next AI-analysis phase.
+    app.ai.graph.nodes.llm_analysis.run_llm_analysis
+
+The workflow supports:
+
+    RAG REUSE
+        ↓
+    Historical Solution
+
+    OR
+
+    RAG REVIEW / LLM_REQUIRED
+        ↓
+    Log-Type Specific LLM Analyzer
+        ↓
+    Structured AI Result
 """
 
 from typing import Literal
@@ -29,13 +43,27 @@ from app.ai.graph.state import (
     AIAnalysisState,
     SelectedError,
 )
+
+from app.ai.graph.nodes.llm_analysis import (
+    run_llm_analysis,
+)
+
 from app.ai.rag.decision_engine import (
     RAGDecision,
     RAGDecisionEngine,
 )
-from app.ai.rag.embedding_service import EmbeddingService
-from app.ai.rag.embedding_text import build_embedding_text
-from app.ai.rag.retriever import RAGRetriever
+
+from app.ai.rag.embedding_service import (
+    EmbeddingService,
+)
+
+from app.ai.rag.embedding_text import (
+    build_embedding_text,
+)
+
+from app.ai.rag.retriever import (
+    RAGRetriever,
+)
 
 
 # =============================================================================
@@ -72,7 +100,8 @@ def initialize_analysis(
     print("=" * 100)
 
     print(
-        f"Selected Errors : {len(selected_errors)}"
+        f"Selected Errors : "
+        f"{len(selected_errors)}"
     )
 
     return {
@@ -131,7 +160,8 @@ def prepare_current_error(
     print("=" * 100)
 
     print(
-        f"Current Index : {current_index}"
+        f"Current Index : "
+        f"{current_index}"
     )
 
     if current_index >= len(
@@ -201,11 +231,6 @@ def prepare_rag_query(
 ) -> dict:
     """
     Build the semantic representation used for RAG.
-
-    At this point we only know the original error.
-
-    Root cause and solution are intentionally NOT included
-    because they are not known yet for a new error.
     """
 
     current_error = state.get(
@@ -225,15 +250,6 @@ def prepare_rag_query(
     embedding_text = build_embedding_text(
         current_error
     )
-
-    # -------------------------------------------------------------------------
-    # Initial normalized representation.
-    #
-    # This is intentionally simple for Step 3.7.
-    #
-    # A dedicated normalization/signature stage can be enhanced later without
-    # changing the overall workflow architecture.
-    # -------------------------------------------------------------------------
 
     title = (
         current_error.get(
@@ -301,7 +317,8 @@ def prepare_rag_query(
     print("=" * 100)
 
     print(
-        f"Error Signature : {error_signature}"
+        f"Error Signature : "
+        f"{error_signature}"
     )
 
     print(
@@ -365,16 +382,9 @@ async def generate_rag_embedding(
     )
 
     print(
-        f"Embedding Size : {len(embedding)}"
+        f"Embedding Size : "
+        f"{len(embedding)}"
     )
-
-    # -------------------------------------------------------------------------
-    # The current state schema doesn't have a dedicated `embedding` field.
-    #
-    # Therefore we keep the vector in normalized_error for now.
-    #
-    # This avoids modifying the frozen Step 3.3 state.
-    # -------------------------------------------------------------------------
 
     normalized_error = dict(
         state.get(
@@ -457,7 +467,8 @@ async def retrieve_rag_matches(
     )
 
     print(
-        f"RAG Matches : {len(matches)}"
+        f"RAG Matches : "
+        f"{len(matches)}"
     )
 
     return {
@@ -498,19 +509,6 @@ def decide_rag(
     decision = rag_decision_engine.decide(
         matches
     )
-
-    # -------------------------------------------------------------------------
-    # We don't modify the frozen Step 3.3 state to add a `rag_decision`
-    # field.
-    #
-    # Instead:
-    #
-    #     high confidence → rag_reuse_solution=True
-    #     medium confidence → rag_reuse_solution=False
-    #     low/none → rag_reuse_solution=False
-    #
-    # Routing will use `rag_confidence`.
-    # -------------------------------------------------------------------------
 
     rag_selected_match = (
         decision.match
@@ -562,10 +560,11 @@ def route_after_rag(
     """
     Route the workflow after RAG decision.
 
-    For now both REVIEW and LLM_REQUIRED go to the future
-    LLM branch.
+    High-confidence historical solution:
+        → reuse_rag
 
-    The actual LLM branch will be implemented later.
+    Medium/low/no-confidence:
+        → llm_required
     """
 
     if state.get(
@@ -780,209 +779,34 @@ def reuse_rag_solution(
 
 # =============================================================================
 # NODE 8
-# LLM PLACEHOLDER
+# LLM ANALYSIS
 # =============================================================================
 
 
-def llm_analysis_placeholder(
+async def run_llm_analysis_node(
     state: AIAnalysisState,
 ) -> dict:
     """
-    Temporary placeholder for the future LLM analysis branch.
+    Adapter node for the actual LLM analysis implementation.
 
-    This node intentionally DOES NOT call an LLM.
+    The real implementation lives in:
 
-    It allows us to test the complete RAG-aware workflow
-    before implementing:
+        app.ai.graph.nodes.llm_analysis.run_llm_analysis
 
-        - Web prompts
-        - Telephony prompts
-        - MySQL prompts
-        - structured LLM output
-        - source-code analysis
-        - testing
-        - Jira generation
+    This wrapper is intentionally kept small so the workflow
+    owns the LangGraph node name while the LLM implementation
+    remains in its dedicated node module.
     """
 
-    current_error = state.get(
-        "current_error"
-    )
-
-    if not current_error:
-
-        return {
-            "error": (
-                "Current error missing "
-                "during LLM placeholder."
-            ),
-
-            "status": "error",
-        }
-
-    rag_confidence = state.get(
-        "rag_confidence",
-        "none",
-    )
-
-    if rag_confidence == "medium":
-
-        status = (
-            "waiting_for_llm_validation"
-        )
-
-        task = (
-            "Historical match found - "
-            "LLM validation required"
-        )
-
-    else:
-
-        status = (
-            "waiting_for_llm_analysis"
-        )
-
-        task = (
-            "No trusted historical solution - "
-            "LLM analysis required"
-        )
-
-    result: AIAnalysisResult = {
-
-        "error_id": current_error.get(
-            "error_id",
-            "",
-        ),
-
-        "tier": current_error.get(
-            "tier",
-            "",
-        ),
-
-        "log_type": current_error.get(
-            "log_type",
-            "",
-        ),
-
-        "server": current_error.get(
-            "server",
-            "",
-        ),
-
-        "file_name": current_error.get(
-            "file_name",
-            "",
-        ),
-
-        "title": current_error.get(
-            "title",
-            "",
-        ),
-
-        "severity": current_error.get(
-            "severity",
-            "",
-        ),
-
-        "timestamp": current_error.get(
-            "timestamp",
-            "",
-        ),
-
-        "start_line": current_error.get(
-            "start_line",
-            0,
-        ),
-
-        "end_line": current_error.get(
-            "end_line",
-            0,
-        ),
-
-        "source": "llm_pending",
-
-        "rag_match": state.get(
-            "rag_match_found",
-            False,
-        ),
-
-        "rag_knowledge_id": (
-            (
-                state.get(
-                    "rag_selected_match"
-                )
-                or {}
-            ).get(
-                "knowledge_id"
-            )
-        ),
-
-        "rag_similarity": state.get(
-            "rag_similarity"
-        ),
-
-        "confidence": rag_confidence,
-
-        "root_cause": "",
-
-        "root_cause_evidence": [],
-
-        "solution": "",
-
-        "optimization": "",
-
-        "source_code_analysis": "",
-
-        "source_file": "",
-
-        "source_line_number": None,
-
-        "test_result": {},
-
-        "jira_description": "",
-
-        "evidence": current_error.get(
-            "lines",
-            [],
-        ),
-
-        "status": status,
-
-        "error": None,
-    }
-
-    final_results = list(
-        state.get(
-            "final_results",
-            [],
-        )
-    )
-
-    final_results.append(
-        result
-    )
-
     print("=" * 100)
-    print("LANGGRAPH - LLM PLACEHOLDER")
+    print("LANGGRAPH - LLM ANALYSIS")
     print("=" * 100)
 
-    print(
-        f"Error ID : "
-        f"{current_error.get('error_id', '')}"
+    result = await run_llm_analysis(
+        state
     )
 
-    print(
-        f"Status   : {status}"
-    )
-
-    return {
-        "final_results": final_results,
-
-        "current_task": task,
-
-        "progress": 80,
-
-        "error": None,
-    }
+    return result
 
 
 # =============================================================================
@@ -1034,15 +858,18 @@ def move_to_next_error(
     print("=" * 100)
 
     print(
-        f"Current Index : {current_index}"
+        f"Current Index : "
+        f"{current_index}"
     )
 
     print(
-        f"Next Index    : {next_index}"
+        f"Next Index    : "
+        f"{next_index}"
     )
 
     print(
-        f"Total Errors  : {total_errors}"
+        f"Total Errors  : "
+        f"{total_errors}"
     )
 
     return {
@@ -1173,9 +1000,9 @@ def build_ai_analysis_graph():
         AIAnalysisState
     )
 
-    # -------------------------------------------------------------------------
-    # Nodes
-    # -------------------------------------------------------------------------
+    # =========================================================================
+    # NODES
+    # =========================================================================
 
     graph.add_node(
         "initialize_analysis",
@@ -1212,9 +1039,26 @@ def build_ai_analysis_graph():
         reuse_rag_solution,
     )
 
+    # =========================================================================
+    # REAL LLM NODE
+    #
+    # IMPORTANT:
+    #
+    # LangGraph node name:
+    #     "llm_analysis"
+    #
+    # Python implementation:
+    #     run_llm_analysis_node
+    #
+    # The wrapper keeps the workflow clean and allows the actual
+    # LLM implementation to remain in:
+    #
+    #     app/ai/graph/nodes/llm_analysis.py
+    # =========================================================================
+
     graph.add_node(
-        "llm_analysis_placeholder",
-        llm_analysis_placeholder,
+        "llm_analysis",
+        run_llm_analysis_node,
     )
 
     graph.add_node(
@@ -1227,18 +1071,18 @@ def build_ai_analysis_graph():
         finalize_analysis,
     )
 
-    # -------------------------------------------------------------------------
+    # =========================================================================
     # START
-    # -------------------------------------------------------------------------
+    # =========================================================================
 
     graph.add_edge(
         START,
         "initialize_analysis",
     )
 
-    # -------------------------------------------------------------------------
-    # Main pipeline
-    # -------------------------------------------------------------------------
+    # =========================================================================
+    # MAIN PIPELINE
+    # =========================================================================
 
     graph.add_edge(
         "initialize_analysis",
@@ -1265,9 +1109,9 @@ def build_ai_analysis_graph():
         "decide_rag",
     )
 
-    # -------------------------------------------------------------------------
-    # RAG Decision
-    # -------------------------------------------------------------------------
+    # =========================================================================
+    # RAG DECISION
+    # =========================================================================
 
     graph.add_conditional_edges(
         "decide_rag",
@@ -1278,14 +1122,14 @@ def build_ai_analysis_graph():
             ),
 
             "llm_required": (
-                "llm_analysis_placeholder"
+                "llm_analysis"
             ),
         },
     )
 
-    # -------------------------------------------------------------------------
-    # Both branches eventually process the next error.
-    # -------------------------------------------------------------------------
+    # =========================================================================
+    # RAG REUSE → NEXT ERROR / FINALIZE
+    # =========================================================================
 
     graph.add_conditional_edges(
         "reuse_rag_solution",
@@ -1301,8 +1145,12 @@ def build_ai_analysis_graph():
         },
     )
 
+    # =========================================================================
+    # LLM ANALYSIS → NEXT ERROR / FINALIZE
+    # =========================================================================
+
     graph.add_conditional_edges(
-        "llm_analysis_placeholder",
+        "llm_analysis",
         route_after_result,
         {
             "next_error": (
@@ -1315,18 +1163,18 @@ def build_ai_analysis_graph():
         },
     )
 
-    # -------------------------------------------------------------------------
-    # Loop
-    # -------------------------------------------------------------------------
+    # =========================================================================
+    # LOOP
+    # =========================================================================
 
     graph.add_edge(
         "move_to_next_error",
         "prepare_current_error",
     )
 
-    # -------------------------------------------------------------------------
+    # =========================================================================
     # END
-    # -------------------------------------------------------------------------
+    # =========================================================================
 
     graph.add_edge(
         "finalize_analysis",
