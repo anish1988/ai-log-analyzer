@@ -502,10 +502,10 @@ and explain that source-code verification is required.
         #
         # =========================================================================
 
-        response = await self.llm_service.structured_call(
+        result = await self.llm_service.analyze_structured(
             system_prompt=self.SYSTEM_PROMPT,
             user_prompt=user_prompt,
-            response_model=TelephonyAIAnalysisResponse,
+            response_schema=TelephonyAIAnalysisResponse,
         )
 
         print("=" * 100)
@@ -517,4 +517,4 @@ and explain that source-code verification is required.
             "TelephonyAIAnalysisResponse"
         )
 
-        return response
+        return result.model_dump()

@@ -1,7 +1,45 @@
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
+
+class TelephonyEvidence(BaseModel):
+
+    model_config = ConfigDict(
+        extra="forbid"
+    )
+
+    line_number: int | None = Field(
+        default=None,
+        description="Log line number supporting the conclusion.",
+    )
+
+    content: str = Field(
+        description="Relevant log content.",
+    )
+
+    explanation: str = Field(
+        description="Why this log line supports the conclusion.",
+    )
+
+class TelephonyTestResult(BaseModel):
+    
+    model_config = ConfigDict(
+        extra="forbid"
+    )
+
+    test_steps: list[str] = Field(
+        default_factory=list,
+        description="Steps required to validate the fix.",
+    )
+
+    expected_result: str = Field(
+        description="Expected successful result.",
+    )
+
+    status: str = Field(
+        description="Recommended validation status.",
+    )    
 
 class TelephonyAIAnalysisResponse(BaseModel):
     """
@@ -21,6 +59,10 @@ class TelephonyAIAnalysisResponse(BaseModel):
         - Telephony database issues
     """
 
+    model_config = ConfigDict(
+            extra="forbid"
+        )
+        
     analysis_status: str = Field(
         description=(
             "Analysis status. "
@@ -56,7 +98,7 @@ class TelephonyAIAnalysisResponse(BaseModel):
         )
     )
 
-    root_cause_evidence: list[dict[str, Any]] = Field(
+    root_cause_evidence: list[TelephonyEvidence] = Field(
         default_factory=list,
         description=(
             "Important log lines supporting the root cause."
@@ -107,7 +149,7 @@ class TelephonyAIAnalysisResponse(BaseModel):
         )
     )
 
-    test_result: dict[str, Any] = Field(
+    test_result: TelephonyTestResult = Field(
         default_factory=dict,
         description=(
             "Recommended validation/test procedure and "
@@ -127,10 +169,11 @@ class TelephonyAIAnalysisResponse(BaseModel):
         )
     )
 
-    evidence: list[dict[str, Any]] = Field(
+    evidence: list[TelephonyEvidence] = Field(
         default_factory=list,
         description=(
             "Important evidence extracted from the "
             "telephony log."
         )
     )
+
