@@ -1,0 +1,11 @@
+
+
+docker exec -it ai-log-analyzer-backend grep -R -n "build_ai_analysis_graph\|ainvoke\|AIAnalysisState" /app/app
+
+docker exec -it ai-log-analyzer-backend grep -R -n "APIRouter\|include_router" /app/app/api /app/app/main.py
+
+docker exec -it ai-log-analyzer-backend grep -R -n "APIRouter\|include_router" /app/app/api /app/app/main.py
+
+docker exec -it ai-log-analyzer-backend sh -c "sed -n '1,240p' /app/app/api/ai_analysis.py"
+docker exec -it ai-log-analyzer-backend sh -c "sed -n '1,80p' /app/app/main.py"
+docker exec -it ai-log-analyzer-backend sh -c "python -c \"from app.schemas.ai_analysis import AIAnalysisRequest, AIAnalysisResponse; import inspect; import app.api.ai_analysis as a; print('ROUTER:', a.router); print('AIAnalysisRequest:', AIAnalysisRequest); print('AIAnalysisResponse:', AIAnalysisResponse); print('MODULE LOADED: OK')\""
