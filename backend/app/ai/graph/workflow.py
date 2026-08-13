@@ -65,6 +65,15 @@ from app.ai.rag.retriever import (
     RAGRetriever,
 )
 
+from app.ai.graph.progress import (
+    append_progress_event,
+    report_progress,
+)
+
+from app.ai.progress.events import ProgressStatus
+
+from app.ai.progress.tasks import ProgressTasks
+
 
 # =============================================================================
 # SERVICES
@@ -83,7 +92,7 @@ rag_decision_engine = RAGDecisionEngine()
 # =============================================================================
 
 
-def initialize_analysis(
+async def initialize_analysis(
     state: AIAnalysisState,
 ) -> dict:
     """
@@ -102,6 +111,14 @@ def initialize_analysis(
     print(
         f"Selected Errors : "
         f"{len(selected_errors)}"
+    )
+
+    event = await report_progress(
+        state,
+        task_id=ProgressTasks.INITIALIZE,
+        status=ProgressStatus.STARTED,
+        progress=0,
+        message="Starting AI analysis.",
     )
 
     return {
@@ -128,6 +145,16 @@ def initialize_analysis(
             "AI analysis workflow started."
         ],
 
+        "progress_event": event,
+
+        "progress_events": [
+            *state.get(
+                "progress_events",
+                [],
+            ),
+            event,
+        ],
+
         "error": None,
     }
 
@@ -138,7 +165,7 @@ def initialize_analysis(
 # =============================================================================
 
 
-def prepare_current_error(
+async def prepare_current_error(
     state: AIAnalysisState,
 ) -> dict:
     """
@@ -197,6 +224,21 @@ def prepare_current_error(
         f"{current_error.get('file_name', '')}"
     )
 
+    event = await report_progress(
+        {
+            **state,
+            "current_error": current_error,
+        },
+        task_id=ProgressTasks.PREPARE_ERROR,
+        status=ProgressStatus.RUNNING,
+        progress=10,
+        message=(
+            f"Preparing error "
+            f"{current_error.get('error_id', '')}."
+        ),
+    )
+
+
     return {
         "current_error": current_error,
 
@@ -216,6 +258,16 @@ def prepare_current_error(
 
         "progress": 10,
 
+        "progress_event": event,
+
+        "progress_events": [
+            *state.get(
+                "progress_events",
+                [],
+            ),
+            event,
+        ],
+
         "error": None,
     }
 
@@ -226,7 +278,7 @@ def prepare_current_error(
 # =============================================================================
 
 
-def prepare_rag_query(
+async def prepare_rag_query(
     state: AIAnalysisState,
 ) -> dict:
     """
@@ -326,6 +378,14 @@ def prepare_rag_query(
         f"{len(embedding_text)}"
     )
 
+    event = await report_progress(
+        state,
+        task_id=ProgressTasks.PREPARE_RAG_QUERY,
+        status=ProgressStatus.COMPLETED,
+        progress=20,
+        message="RAG query prepared.",
+    )
+
     return {
         "normalized_error": normalized_error,
 
@@ -340,6 +400,16 @@ def prepare_rag_query(
         ),
 
         "progress": 20,
+
+        "progress_event": event,
+
+        "progress_events": [
+            *state.get(
+                "progress_events",
+                [],
+            ),
+            event,
+        ],
 
         "error": None,
     }
@@ -381,6 +451,14 @@ async def generate_rag_embedding(
         embedding_text
     )
 
+    event = await report_progress(
+        state,
+        task_id=ProgressTasks.GENERATE_EMBEDDING,
+        status=ProgressStatus.COMPLETED,
+        progress=30,
+        message="Error embedding generated.",
+    )
+
     print(
         f"Embedding Size : "
         f"{len(embedding)}"
@@ -405,6 +483,16 @@ async def generate_rag_embedding(
         ),
 
         "progress": 30,
+
+        "progress_event": event,
+
+        "progress_events": [
+            *state.get(
+                "progress_events",
+                [],
+            ),
+            event,
+        ],
 
         "error": None,
     }
@@ -454,6 +542,14 @@ async def retrieve_rag_matches(
     print("LANGGRAPH - RAG RETRIEVAL")
     print("=" * 100)
 
+    start_event = await report_progress(
+        state,
+        task_id=ProgressTasks.RETRIEVE_RAG,
+        status=ProgressStatus.RUNNING,
+        progress=35,
+        message="Searching historical knowledge.",
+    )
+
     matches = await rag_retriever.search(
         embedding=embedding,
 
@@ -464,6 +560,17 @@ async def retrieve_rag_matches(
         limit=5,
 
         min_similarity=0.0,
+    )
+
+    complete_event = await report_progress(
+        state,
+        task_id=ProgressTasks.RETRIEVE_RAG,
+        status=ProgressStatus.COMPLETED,
+        progress=45,
+        message=(
+            f"Historical search completed. "
+            f"{len(matches)} matches found."
+        ),
     )
 
     print(
@@ -480,6 +587,17 @@ async def retrieve_rag_matches(
 
         "progress": 45,
 
+        "progress_event": complete_event,
+
+        "progress_events": [
+            *state.get(
+                "progress_events",
+                [],
+            ),
+            start_event,
+            complete_event,
+        ],
+
         "error": None,
     }
 
@@ -490,7 +608,7 @@ async def retrieve_rag_matches(
 # =============================================================================
 
 
-def decide_rag(
+async def decide_rag(
     state: AIAnalysisState,
 ) -> dict:
     """
@@ -506,8 +624,73 @@ def decide_rag(
     print("LANGGRAPH - RAG DECISION")
     print("=" * 100)
 
+    # -------------------------------------------------------------------------
+    # DEBUG - INSPECT RAG MATCHES BEFORE DECISION
+    # -------------------------------------------------------------------------
+
+    print(
+        f"RAG Matches Count : {len(matches)}"
+    )
+
+    for index, match in enumerate(matches):
+
+        print(
+            f"RAG Match [{index}]"
+        )
+
+        print(
+            f"  Knowledge ID      : "
+            f"{match.get('knowledge_id')}"
+        )
+
+        print(
+            f"  Similarity        : "
+            f"{match.get('similarity')}"
+        )
+
+        print(
+            f"  Verified          : "
+            f"{match.get('verified')}"
+        )
+
+        print(
+            f"  Resolution Status : "
+            f"{match.get('resolution_status')}"
+        )
+
+        print(
+            f"  Tier              : "
+            f"{match.get('tier')}"
+        )
+
+        print(
+            f"  Log Type          : "
+            f"{match.get('log_type')}"
+        )
+
+    print("=" * 100)
+
     decision = rag_decision_engine.decide(
         matches
+    )
+
+    event = await report_progress(
+        state,
+        task_id=ProgressTasks.DECIDE_RAG,
+        status=ProgressStatus.COMPLETED,
+        progress=55,
+        message=(
+            f"RAG decision completed: "
+            f"{decision.decision.value}"
+            if hasattr(
+                decision.decision,
+                "value",
+            )
+            else (
+                f"RAG decision completed: "
+                f"{decision.decision}"
+            )
+        ),
     )
 
     rag_selected_match = (
@@ -536,11 +719,42 @@ def decide_rag(
             == RAGDecision.REUSE
         ),
 
+        # ---------------------------------------------------------
+        # RAG → LLM CONTEXT
+        # ---------------------------------------------------------
+
+        "rag_decision": (
+            decision.decision.value
+            if hasattr(
+                decision.decision,
+                "value",
+            )
+            else str(
+                decision.decision
+            )
+        ),
+
+        "rag_result": (
+            dict(decision.match)
+            if decision.match
+            else None
+        ),
+
         "current_task": (
             "RAG decision completed"
         ),
 
         "progress": 55,
+
+        "progress_event": event,
+
+        "progress_events": [
+            *state.get(
+                "progress_events",
+                [],
+            ),
+            event,
+        ],
 
         "error": None,
     }
@@ -583,7 +797,7 @@ def route_after_rag(
 # =============================================================================
 
 
-def reuse_rag_solution(
+async def reuse_rag_solution(
     state: AIAnalysisState,
 ) -> dict:
     """
@@ -621,6 +835,14 @@ def reuse_rag_solution(
 
             "status": "error",
         }
+
+    event = await report_progress(
+        state,
+        task_id=ProgressTasks.REUSE_RAG,
+        status=ProgressStatus.COMPLETED,
+        progress=80,
+        message="Historical solution reused.",
+    )
 
     result: AIAnalysisResult = {
 
@@ -773,6 +995,16 @@ def reuse_rag_solution(
 
         "progress": 80,
 
+        "progress_event": event,
+
+        "progress_events": [
+            *state.get(
+                "progress_events",
+                [],
+            ),
+            event,
+        ],
+
         "error": None,
     }
 
@@ -802,11 +1034,57 @@ async def run_llm_analysis_node(
     print("LANGGRAPH - LLM ANALYSIS")
     print("=" * 100)
 
+    start_event = await report_progress(
+        state,
+        task_id=ProgressTasks.PREPARE_LLM,
+        status=ProgressStatus.RUNNING,
+        progress=60,
+        message="Starting AI analysis.",
+    )
+
     result = await run_llm_analysis(
         state
     )
 
-    return result
+    complete_event = await report_progress(
+        state,
+        task_id=ProgressTasks.PREPARE_LLM,
+        status=ProgressStatus.COMPLETED,
+        progress=80,
+        message="AI analysis completed.",
+    )
+
+    current_ai_result = result.get(
+        "current_ai_result"
+    )
+
+    final_results = list(
+        state.get(
+            "final_results",
+            [],
+        )
+    )
+
+    if current_ai_result:
+
+        final_results.append(
+            current_ai_result
+        )
+
+    return {
+        **result,
+
+        "progress_event": complete_event,
+
+        "progress_events": [
+            *state.get(
+                "progress_events",
+                [],
+            ),
+            start_event,
+            complete_event,
+        ],
+    }
 
 
 # =============================================================================
@@ -815,7 +1093,7 @@ async def run_llm_analysis_node(
 # =============================================================================
 
 
-def move_to_next_error(
+async def move_to_next_error(
     state: AIAnalysisState,
 ) -> dict:
     """
@@ -852,6 +1130,18 @@ def move_to_next_error(
     else:
 
         progress = 90
+
+    event = await report_progress(
+        state,
+        task_id=ProgressTasks.PREPARE_ERROR,
+        status=ProgressStatus.RUNNING,
+        progress=progress,
+        message=(
+            f"Moving to error "
+            f"{next_index + 1} of "
+            f"{total_errors}."
+        ),
+    )
 
     print("=" * 100)
     print("LANGGRAPH - NEXT ERROR")
@@ -903,6 +1193,16 @@ def move_to_next_error(
 
         "progress": progress,
 
+        "progress_event": event,
+
+        "progress_events": [
+            *state.get(
+                "progress_events",
+                [],
+            ),
+            event,
+        ],
+
         "error": None,
     }
 
@@ -912,7 +1212,7 @@ def move_to_next_error(
 # =============================================================================
 
 
-def finalize_analysis(
+async def finalize_analysis(
     state: AIAnalysisState,
 ) -> dict:
     """
@@ -922,6 +1222,13 @@ def finalize_analysis(
     final_results = state.get(
         "final_results",
         [],
+    )
+    event = await report_progress(
+        state,
+        task_id=ProgressTasks.FINALIZE,
+        status=ProgressStatus.COMPLETED,
+        progress=100,
+        message="AI analysis workflow completed.",
     )
 
     print("=" * 100)
@@ -941,6 +1248,16 @@ def finalize_analysis(
         ),
 
         "progress": 100,
+
+        "progress_event": event,
+
+        "progress_events": [
+            *state.get(
+                "progress_events",
+                [],
+            ),
+            event,
+        ],
 
         "messages": [
             *state.get(
