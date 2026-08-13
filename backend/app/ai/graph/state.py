@@ -31,7 +31,7 @@ The workflow is intentionally designed to support:
 """
 
 from typing import Any, TypedDict
-
+from app.ai.progress.events import ProgressEvent
 
 # =============================================================================
 # SELECTED ERROR
@@ -282,6 +282,8 @@ class AIAnalysisState(TypedDict, total=False):
 
     optimization: str
 
+    current_ai_result: AIAnalysisResult | None
+
 
     # =========================================================================
     # SOURCE CODE ANALYSIS
@@ -328,4 +330,13 @@ class AIAnalysisState(TypedDict, total=False):
     messages: list[str]
 
     error: str | None
+
+
+    # =========================================================================
+    # PROGRESS EVENTS
+    # =========================================================================
+
+    progress_event: ProgressEvent | None
+
+    progress_events: list[ProgressEvent]
 

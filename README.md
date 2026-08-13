@@ -257,8 +257,48 @@ backend/app/ai/
                             ▼
                     Store Knowledge
 
+PROGRESS BAR
 
-
+START
+  │
+  ▼
+initialize_analysis
+  │
+  ▼
+prepare_current_error
+  │
+  ▼
+prepare_rag_query
+  │
+  ▼
+generate_rag_embedding
+  │
+  ▼
+retrieve_rag_matches
+  │
+  ▼
+decide_rag
+  │
+  ├─────────────── RAG REUSE ───────────────┐
+  │                                         ▼
+  │                              reuse_rag_solution
+  │                                         │
+  │                                         │
+  └──── LLM_REQUIRED ───► llm_analysis       │
+                              │              │
+                              └──────┬───────┘
+                                     ▼
+                           route_after_result
+                              │           │
+                         next_error     finalize
+                              │           │
+                              ▼           ▼
+                     move_to_next_error  finalize_analysis
+                              │
+                              ▼
+                    prepare_current_error
+                              │
+                              └── loop
 
 
 
