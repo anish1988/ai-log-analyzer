@@ -218,7 +218,10 @@ async def run_llm_analysis(
             "",
         ),
 
-        "severity": analysis.get("severity", ""),
+        "severity": ai_result.get(
+            "severity",
+            "",
+        ),
 
         "timestamp": current_error.get(
             "timestamp",
