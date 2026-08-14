@@ -81,6 +81,7 @@ class RAGRetriever:
         tier: str | None = None,
         log_type: str | None = None,
         limit: int = 5,
+        error_signature: str | None = None,
         min_similarity: float = 0.0,
     ) -> list[RAGMatch]:
         """
@@ -182,6 +183,7 @@ class RAGRetriever:
 
                 parameters: dict[str, Any] = {
                     "embedding": query_embedding,
+                    "error_signature": error_signature,
                     "limit": limit,
                     "min_similarity": min_similarity,
                 }
@@ -336,6 +338,11 @@ class RAGRetriever:
                     {where_clause}
 
                     ORDER BY
+                        CASE
+                            WHEN  error_signature = %(error_signature)s
+                            THEN 0
+                            ELSE 1
+                        END,
                         embedding <=> %(embedding)s
 
                     LIMIT %(limit)s

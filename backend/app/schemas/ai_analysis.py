@@ -269,6 +269,18 @@ class AIProgressEventResponse(BaseModel):
     timestamp: str | None = None
 
 
+
+class AIKnowledgeVerificationRequest(BaseModel):
+    verified: bool = True
+
+    resolution_status: Literal[
+        "verified",
+        "resolved",
+        "rejected",
+    ]
+
+    verification_notes: str = ""
+
 # =============================================================================
 # AI ANALYSIS RESPONSE
 # =============================================================================

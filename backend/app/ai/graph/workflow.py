@@ -554,13 +554,12 @@ async def retrieve_rag_matches(
 
     matches = await rag_retriever.search(
         embedding=embedding,
-
+        error_signature=state.get(
+            "error_signature"
+        ),
         tier=tier,
-
         log_type=log_type,
-
         limit=5,
-
         min_similarity=0.0,
     )
 

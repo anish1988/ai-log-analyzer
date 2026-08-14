@@ -35,6 +35,10 @@ from app.ai.graph.progress import (
     get_progress_publisher,
 )
 
+from app.schemas.ai_analysis import (
+    AIKnowledgeVerificationRequest,
+)
+
 
 router = APIRouter(
     prefix="/api/ai",
@@ -477,4 +481,147 @@ async def analyze_errors(
         raise HTTPException(
             status_code=500,
             detail="AI analysis failed.",
+        ) from exc
+
+
+# =============================================================================
+# VERIFY RAG KNOWLEDGE
+# =============================================================================
+
+@router.patch(
+    "/knowledge/{knowledge_id}/verify",
+)
+async def verify_knowledge(
+    knowledge_id: int,
+    request: AIKnowledgeVerificationRequest,
+):
+    """
+    Mark an AI analysis result as verified/resolved.
+
+    This does NOT trigger LLM analysis.
+    It only updates the existing RAG knowledge record.
+    """
+
+    import os
+
+    import psycopg
+
+    host = os.getenv(
+        "POSTGRES_HOST",
+        "postgres",
+    )
+
+    port = int(
+        os.getenv(
+            "POSTGRES_PORT",
+            "5432",
+        )
+    )
+
+    database = os.getenv(
+        "POSTGRES_DB",
+        "ai_log_analyzer",
+    )
+
+    user = os.getenv(
+        "POSTGRES_USER",
+        "postgres",
+    )
+
+    password = os.getenv(
+        "POSTGRES_PASSWORD",
+        "postgres",
+    )
+
+    try:
+
+        connection = await psycopg.AsyncConnection.connect(
+            host=host,
+            port=port,
+            dbname=database,
+            user=user,
+            password=password,
+        )
+
+        try:
+
+            async with connection.cursor() as cursor:
+
+                await cursor.execute(
+                    """
+                    UPDATE ai_knowledge_items
+                    SET
+                        verified = %(verified)s,
+                        resolution_status = %(resolution_status)s,
+                        verification_notes = %(verification_notes)s,
+                        updated_at = NOW()
+                    WHERE id = %(knowledge_id)s
+                    RETURNING
+                        id,
+                        verified,
+                        resolution_status,
+                        verification_notes,
+                        updated_at
+                    """,
+                    {
+                        "knowledge_id": knowledge_id,
+
+                        "verified": request.verified,
+
+                        "resolution_status": (
+                            request.resolution_status
+                        ),
+
+                        "verification_notes": (
+                            request.verification_notes
+                        ),
+                    },
+                )
+
+                row = await cursor.fetchone()
+
+                if row is None:
+
+                    raise HTTPException(
+                        status_code=404,
+                        detail=(
+                            f"Knowledge ID "
+                            f"{knowledge_id} not found."
+                        ),
+                    )
+
+                await connection.commit()
+
+                return {
+                    "success": True,
+                    "knowledge_id": row[0],
+                    "verified": row[1],
+                    "resolution_status": row[2],
+                    "verification_notes": row[3],
+                    "updated_at": row[4],
+                }
+
+        finally:
+
+            await connection.close()
+
+    except HTTPException:
+
+        raise
+
+    except Exception as exc:
+
+        print("=" * 100)
+        print("RAG KNOWLEDGE VERIFICATION ERROR")
+        print("=" * 100)
+
+        print(
+            repr(exc)
+        )
+
+        print("=" * 100)
+
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to verify RAG knowledge.",
         ) from exc
