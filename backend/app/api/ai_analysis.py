@@ -7,8 +7,6 @@ and executes the LangGraph AI analysis workflow.
 
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException
-
 from app.schemas.ai_analysis import (
     AIAnalysisRequest,
     AIAnalysisResponse,
@@ -20,13 +18,189 @@ from app.ai.graph.workflow import (
     build_ai_analysis_graph,
 )
 
+import asyncio
+import json
+
+from fastapi import (
+    APIRouter,
+    HTTPException,
+    Request,
+)
+
+from fastapi.responses import (
+    StreamingResponse,
+)
+
+from app.ai.graph.progress import (
+    get_progress_publisher,
+)
+
 
 router = APIRouter(
     prefix="/api/ai",
     tags=["AI Analysis"],
 )
 
+# =============================================================================
+# AI ANALYSIS PROGRESS STREAM
+# =============================================================================
 
+
+@router.get(
+    "/progress/{request_id}",
+)
+async def stream_analysis_progress(
+    request_id: str,
+    request: Request,
+):
+    """
+    Stream real-time AI analysis progress using
+    Server-Sent Events (SSE).
+
+    The client subscribes using the same request_id
+    supplied to POST /api/ai/analyze.
+    """
+
+    print("=" * 100)
+    print("AI PROGRESS STREAM CONNECTED")
+    print("=" * 100)
+
+    print(
+        f"Request ID : {request_id}"
+    )
+
+    publisher = get_progress_publisher()
+
+    queue = await publisher.subscribe(
+        request_id
+    )
+
+    async def event_generator():
+
+        try:
+
+            # -------------------------------------------------------------
+            # Initial connection event
+            # -------------------------------------------------------------
+
+            connected_event = {
+                "type": "connected",
+                "request_id": request_id,
+                "message": (
+                    "AI progress stream connected."
+                ),
+            }
+
+            yield (
+                "event: connected\n"
+                f"data: {json.dumps(connected_event)}\n\n"
+            )
+
+            # -------------------------------------------------------------
+            # Stream progress events
+            # -------------------------------------------------------------
+
+            while True:
+
+                # Stop if browser disconnected.
+                if await request.is_disconnected():
+
+                    print(
+                        "AI progress client disconnected:"
+                        f" {request_id}"
+                    )
+
+                    break
+
+                try:
+
+                    event = await asyncio.wait_for(
+                        queue.get(),
+                        timeout=15.0,
+                    )
+
+                except asyncio.TimeoutError:
+
+                    # -----------------------------------------------------
+                    # SSE heartbeat
+                    #
+                    # Keeps proxies/browser connections alive while an
+                    # LLM operation is taking longer to produce an event.
+                    # -----------------------------------------------------
+
+                    yield (
+                        ": heartbeat\n\n"
+                    )
+
+                    continue
+
+                event_data = event.model_dump(
+                    mode="json"
+                )
+
+                yield (
+                    "event: progress\n"
+                    f"data: {json.dumps(event_data)}\n\n"
+                )
+
+                # ---------------------------------------------------------
+                # Request completed
+                # ---------------------------------------------------------
+
+                if (
+                    event.task_id
+                    == "finalize_analysis"
+                    and event.status.value
+                    == "completed"
+                    and event.progress
+                    == 100
+                ):
+
+                    completed_event = {
+                        "type": "completed",
+                        "request_id": request_id,
+                    }
+
+                    yield (
+                        "event: completed\n"
+                        f"data: {json.dumps(completed_event)}\n\n"
+                    )
+
+                    break
+
+        except asyncio.CancelledError:
+
+            print(
+                "AI progress stream cancelled:"
+                f" {request_id}"
+            )
+
+            raise
+
+        finally:
+
+            await publisher.unsubscribe(
+                request_id,
+                queue,
+            )
+
+            print("=" * 100)
+            print("AI PROGRESS STREAM CLOSED")
+            print("=" * 100)
+
+            print(
+                f"Request ID : {request_id}"
+            )
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 # =============================================================================
 # AI ANALYSIS
 # =============================================================================

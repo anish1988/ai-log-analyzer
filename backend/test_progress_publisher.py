@@ -1,169 +1,54 @@
-"""
-STEP 3.13.3 - ProgressPublisher test.
-"""
-
 import asyncio
 
-from app.ai.progress.events import ProgressStatus
 from app.ai.progress.publisher import ProgressPublisher
+from app.ai.progress.events import ProgressStatus
 
-
-# =============================================================================
-# TEST CALLBACK
-# =============================================================================
-
-received_events = []
-
-
-def test_callback(event):
-
-    print()
-    print("CALLBACK RECEIVED EVENT")
-
-    received_events.append(
-        event
-    )
-
-
-# =============================================================================
-# TEST
-# =============================================================================
 
 async def main():
 
-    print("=" * 100)
-    print("STEP 3.13.3 - PROGRESS PUBLISHER TEST")
-    print("=" * 100)
+    publisher = ProgressPublisher()
 
-    publisher = ProgressPublisher(
-        callback=test_callback
+    queue_a = await publisher.subscribe(
+        'TEST-A'
     )
 
-    # -------------------------------------------------------------------------
-    # STARTED
-    # -------------------------------------------------------------------------
-
-    event_1 = await publisher.publish(
-
-        request_id="TEST-3.13.3",
-
-        error_id="TEST-ERROR-001",
-
-        task_id="initialize_analysis",
-
-        task_name="Initializing AI analysis",
-
-        status=ProgressStatus.STARTED,
-
-        progress=0,
-
-        message="Starting AI analysis.",
-
-        log_type="laravel",
-
-        error_index=0,
-
-        total_errors=1,
+    queue_b = await publisher.subscribe(
+        'TEST-B'
     )
 
-    # -------------------------------------------------------------------------
-    # RUNNING
-    # -------------------------------------------------------------------------
-
-    event_2 = await publisher.publish(
-
-        request_id="TEST-3.13.3",
-
-        error_id="TEST-ERROR-001",
-
-        task_id="retrieve_rag",
-
-        task_name="Searching historical knowledge",
-
+    await publisher.publish(
+        request_id='TEST-A',
+        task_id='test_task',
+        task_name='Test Task',
         status=ProgressStatus.RUNNING,
-
-        progress=35,
-
-        message="Searching historical knowledge.",
-
-        log_type="laravel",
-
-        error_index=0,
-
-        total_errors=1,
+        progress=50,
+        message='Testing request A',
     )
 
-    # -------------------------------------------------------------------------
-    # COMPLETED
-    # -------------------------------------------------------------------------
+    event_a = await queue_a.get()
 
-    event_3 = await publisher.publish(
+    print('=' * 100)
+    print('PUBLISHER SUBSCRIBER TEST')
+    print('=' * 100)
 
-        request_id="TEST-3.13.3",
+    print('Queue A received :', event_a.request_id)
+    print('Queue B empty    :', queue_b.empty())
 
-        error_id="TEST-ERROR-001",
+    assert event_a.request_id == 'TEST-A'
+    assert queue_b.empty()
 
-        task_id="finalize_analysis",
-
-        task_name="Finalizing analysis",
-
-        status=ProgressStatus.COMPLETED,
-
-        progress=100,
-
-        message="AI analysis completed.",
-
-        log_type="laravel",
-
-        error_index=0,
-
-        total_errors=1,
+    await publisher.unsubscribe(
+        'TEST-A',
+        queue_a,
     )
 
-    # =========================================================================
-    # VALIDATION
-    # =========================================================================
-
-    assert event_1.status == ProgressStatus.STARTED
-
-    assert event_2.status == ProgressStatus.RUNNING
-
-    assert event_3.status == ProgressStatus.COMPLETED
-
-    assert event_1.progress == 0
-
-    assert event_2.progress == 35
-
-    assert event_3.progress == 100
-
-    assert event_1.error_index == 0
-
-    assert event_1.total_errors == 1
-
-    assert len(received_events) == 3
-
-    print()
-    print("=" * 100)
-    print(
-        "Events received:",
-        len(received_events),
+    await publisher.unsubscribe(
+        'TEST-B',
+        queue_b,
     )
 
-    print(
-        "First event:",
-        received_events[0].model_dump(),
-    )
-
-    print(
-        "Last event:",
-        received_events[-1].model_dump(),
-    )
-
-    print("=" * 100)
-    print("STEP 3.13.3 TEST PASSED")
-    print("=" * 100)
+    print('TEST RESULT      : PASS')
+    print('=' * 100)
 
 
-if __name__ == "__main__":
-
-    asyncio.run(main())
+asyncio.run(main())
