@@ -120,3 +120,22 @@ Observation
 6) stepper not move after step 2. it should move on each step = Done
 7) when we change the Log type . it not chnage the default log path . it should e chnage according to selection of log type each time. = Done
 8) need to display if file not found and what ever error in UI
+
+
+PHASE 3 Requirement
+
+1) if we configure all web server and mysql server and its IP . system run auatomatically one by one for all server nad each server has own log file .
+
+you can consider we are using load balncer but in our case we know the number of server . 
+2) so sysem fetch the all types of logs from each server / clustr one by one and then it goes to step 2 and analysis the error / preview the error and then send all error 
+to LLM for analyse and llm do same things as we did in step 2 .
+
+3) and save all result in one file with date and time .
+
+4) for all request / response for each step save in file . 
+5) and then create a jira ticket for each and every log . doesn;t matter log will be 10.50.100 
+6) we need to use same function and api for this task . if reqired we create new file for this requirment but try we do not nee dto write same logic again and agin 
+7) also we mark the log where we reads last log.because  in some log we hav eonly one file and every day log sav ein sam efile . onsted of reads all logs wgain ang again . 
+system shoild mark in whcih line system fetcch the log . so when cron runs next time it tooks log from last read not from the starting
+
+
