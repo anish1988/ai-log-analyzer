@@ -1,6 +1,11 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 import useAIAnalysisProgress, {
   type AIProgressEvent,
@@ -69,14 +74,29 @@ export default function AIAnalysisLauncher({
   onCompleted,
   onError,
 }: AIAnalysisLauncherProps) {
-  const [isAnalyzing, setIsAnalyzing] =
+  // ---------------------------------------------------------------------------
+  // Analysis lifecycle
+  // ---------------------------------------------------------------------------
+
+  const [analysisStarted, setAnalysisStarted] =
     useState(false);
 
-  const [isCompleted, setIsCompleted] =
-    useState(false);
+  const [pendingResponse, setPendingResponse] =
+    useState<AIAnalysisResponse | null>(null);
 
-  const [requestId, setRequestId] =
+  const [requestError, setRequestError] =
     useState<string | null>(null);
+
+  // ---------------------------------------------------------------------------
+  // Prevent duplicate completion callback
+  // ---------------------------------------------------------------------------
+
+  const completionNotifiedRef =
+    useRef(false);
+
+  // ---------------------------------------------------------------------------
+  // SSE progress
+  // ---------------------------------------------------------------------------
 
   const {
     progress,
@@ -86,9 +106,54 @@ export default function AIAnalysisLauncher({
     stopProgressStream,
   } = useAIAnalysisProgress();
 
-  // ===========================================================================
+  // =============================================================================
+  // DERIVED STATE
+  // =============================================================================
+
+  /*
+   * The SSE hook is the source of truth for workflow completion.
+   *
+   * The backend sends:
+   *
+   * event: completed
+   *
+   * The hook then changes:
+   *
+   * status = "completed"
+   *
+   * We additionally require the POST response to be available before
+   * considering the entire analysis ready.
+   */
+
+  const isCompleted =
+    status === "completed" &&
+    pendingResponse !== null;
+
+  /*
+   * Analysis is still running while:
+   *
+   * 1. analysis was started
+   * 2. SSE has not completed
+   * 3. there is no fatal request error
+   */
+
+  const isAnalyzing =
+    analysisStarted &&
+    !isCompleted &&
+    !requestError;
+
+  /*
+   * Progress error and API request error are displayed through the
+   * same progress modal.
+   */
+
+  const displayError =
+    progressError ??
+    requestError;
+
+  // =============================================================================
   // START ANALYSIS
-  // ===========================================================================
+  // =============================================================================
 
   const startAnalysis =
     useCallback(
@@ -105,14 +170,25 @@ export default function AIAnalysisLauncher({
           return;
         }
 
+        // -----------------------------------------------------------------------
+        // Create request ID
+        // -----------------------------------------------------------------------
+
         const newRequestId =
           createRequestId();
 
-        setRequestId(newRequestId);
+        // -----------------------------------------------------------------------
+        // Reset previous analysis state
+        // -----------------------------------------------------------------------
 
-        setIsAnalyzing(true);
+        completionNotifiedRef.current =
+          false;
 
-        setIsCompleted(false);
+        setAnalysisStarted(true);
+
+        setPendingResponse(null);
+
+        setRequestError(null);
 
         onStarted?.(
           newRequestId,
@@ -140,21 +216,20 @@ export default function AIAnalysisLauncher({
           "====================================",
         );
 
-        // ---------------------------------------------------------------------
-        // IMPORTANT:
+        // -----------------------------------------------------------------------
+        // Start SSE BEFORE POST
         //
-        // Open SSE before POST /analyze so that the first progress event
-        // cannot be missed.
-        // ---------------------------------------------------------------------
+        // This prevents the first progress event from being missed.
+        // -----------------------------------------------------------------------
 
         startProgressStream(
           newRequestId,
         );
 
         try {
-          // -------------------------------------------------------------------
-          // Build API request
-          // -------------------------------------------------------------------
+          // ---------------------------------------------------------------------
+          // Request body
+          // ---------------------------------------------------------------------
 
           const requestBody = {
             request_id:
@@ -169,9 +244,9 @@ export default function AIAnalysisLauncher({
             requestBody,
           );
 
-          // -------------------------------------------------------------------
-          // Start backend workflow
-          // -------------------------------------------------------------------
+          // ---------------------------------------------------------------------
+          // Start backend analysis
+          // ---------------------------------------------------------------------
 
           const response =
             await fetch(
@@ -190,9 +265,9 @@ export default function AIAnalysisLauncher({
               },
             );
 
-          // -------------------------------------------------------------------
+          // ---------------------------------------------------------------------
           // HTTP ERROR
-          // -------------------------------------------------------------------
+          // ---------------------------------------------------------------------
 
           if (!response.ok) {
             let message =
@@ -220,9 +295,16 @@ export default function AIAnalysisLauncher({
             );
           }
 
-          // -------------------------------------------------------------------
-          // FINAL API RESPONSE
-          // -------------------------------------------------------------------
+          // ---------------------------------------------------------------------
+          // API response
+          //
+          // IMPORTANT:
+          //
+          // Do NOT close the popup here.
+          //
+          // The POST response only means the HTTP request has completed.
+          // The SSE stream still needs to send the final "completed" event.
+          // ---------------------------------------------------------------------
 
           const result =
             (await response.json()) as AIAnalysisResponse;
@@ -232,7 +314,7 @@ export default function AIAnalysisLauncher({
           );
 
           console.log(
-            "AI ANALYSIS COMPLETED",
+            "AI ANALYSIS API RESPONSE RECEIVED",
           );
 
           console.log(
@@ -243,9 +325,7 @@ export default function AIAnalysisLauncher({
             "====================================",
           );
 
-          setIsCompleted(true);
-
-          onCompleted?.(
+          setPendingResponse(
             result,
           );
         } catch (error) {
@@ -259,69 +339,180 @@ export default function AIAnalysisLauncher({
             error,
           );
 
+          // ---------------------------------------------------------------------
+          // Stop SSE because the actual API request failed.
+          // ---------------------------------------------------------------------
+
+          stopProgressStream();
+
+          setRequestError(
+            message,
+          );
+
+          setAnalysisStarted(
+            false,
+          );
+
+          setPendingResponse(
+            null,
+          );
+
           onError?.(
             message,
           );
-        } finally {
-          // -------------------------------------------------------------------
-          // POST request is finished.
-          //
-          // Do NOT immediately close the SSE connection here if the SSE
-          // completion event has not arrived yet.
-          // -------------------------------------------------------------------
-
-          setIsAnalyzing(false);
         }
       },
       [
         isAnalyzing,
         selectedErrors,
         onStarted,
-        onCompleted,
         onError,
         startProgressStream,
+        stopProgressStream,
       ],
     );
 
-  // ===========================================================================
-  // FORWARD PROGRESS EVENT
-  // ===========================================================================
+  // =============================================================================
+  // FORWARD PROGRESS
+  // =============================================================================
+
+  useEffect(() => {
+    if (!progress) {
+      return;
+    }
+
+    onProgress?.(
+      progress,
+    );
+  }, [
+    progress,
+    onProgress,
+  ]);
+
+  // =============================================================================
+  // SSE COMPLETION
+  // =============================================================================
 
   /*
-   * The SSE hook owns the event stream and stores the latest progress event.
+   * This effect does NOT update React state.
    *
-   * We expose the latest event to the parent callback here.
+   * It only notifies the parent that the complete AI response is ready.
+   *
+   * This avoids the React set-state-in-effect lint error.
    */
 
-  const latestProgress =
-    progress;
+  useEffect(() => {
+    if (
+      status !== "completed" ||
+      !pendingResponse
+    ) {
+      return;
+    }
 
-  if (
-    latestProgress &&
-    onProgress
-  ) {
-    // Intentionally not called during render.
-    //
-    // The progress UI reads the hook state directly.
-    // onProgress remains available for future parent-level orchestration.
-  }
+    if (
+      completionNotifiedRef.current
+    ) {
+      return;
+    }
 
-  // ===========================================================================
-  // ERROR STATE
-  // ===========================================================================
+    completionNotifiedRef.current =
+      true;
 
-  const displayError =
-    progressError;
+    console.log(
+      "====================================",
+    );
 
-  // ===========================================================================
+    console.log(
+      "AI ANALYSIS WORKFLOW COMPLETED",
+    );
+
+    console.log(
+      "All selected errors processed.",
+    );
+
+    console.log(
+      "Total errors:",
+      pendingResponse.total_errors,
+    );
+
+    console.log(
+      "Progress:",
+      pendingResponse.progress,
+    );
+
+    console.log(
+      "====================================",
+    );
+
+    onCompleted?.(
+      pendingResponse,
+    );
+  }, [
+    status,
+    pendingResponse,
+    onCompleted,
+  ]);
+
+  // =============================================================================
+  // CLOSE POPUP
+  // =============================================================================
+
+  const handleClose =
+    useCallback(() => {
+      /*
+       * Do not allow the popup to close while analysis is still running.
+       *
+       * An error is allowed to close because the workflow has already failed.
+       */
+
+      if (
+        !isCompleted &&
+        !displayError
+      ) {
+        return;
+      }
+
+      console.log(
+        "====================================",
+      );
+
+      console.log(
+        "AI ANALYSIS POPUP CLOSED",
+      );
+
+      console.log(
+        "====================================",
+      );
+
+      stopProgressStream();
+
+      setAnalysisStarted(
+        false,
+      );
+
+      setPendingResponse(
+        null,
+      );
+
+      setRequestError(
+        null,
+      );
+    }, [
+      isCompleted,
+      displayError,
+      stopProgressStream,
+    ]);
+
+  // =============================================================================
   // UI
-  // ===========================================================================
+  // =============================================================================
 
   return (
     <div className="space-y-4">
-      {/* ------------------------------------------------------------------ */}
-      {/* Analyze Button                                                     */}
-      {/* ------------------------------------------------------------------ */}
+
+      {/* ===================================================================== */}
+      {/* Analyze Button                                                        */}
+      {/* ===================================================================== */}
 
       <button
         type="button"
@@ -344,23 +535,32 @@ export default function AIAnalysisLauncher({
             : "Analyze with AI"}
       </button>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Progress UI                                                        */}
-      {/* ------------------------------------------------------------------ */}
+      {/* ===================================================================== */}
+      {/* AI Progress Modal                                                     */}
+      {/* ===================================================================== */}
 
       {(isAnalyzing ||
         isCompleted ||
         displayError) && (
         <AIAnalysisProgress
-          progress={latestProgress}
-          isAnalyzing={isAnalyzing}
-          isCompleted={
-            isCompleted ||
-            status === "completed"
+          progress={
+            progress
           }
-          error={displayError}
+          isAnalyzing={
+            isAnalyzing
+          }
+          isCompleted={
+            isCompleted
+          }
+          error={
+            displayError
+          }
+          onClose={
+            handleClose
+          }
         />
       )}
+
     </div>
   );
 }
