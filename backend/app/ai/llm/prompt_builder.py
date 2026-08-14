@@ -1,5 +1,22 @@
 """
 Prompt construction for AI log analysis.
+
+SEVERITY ASSESSMENT
+===================
+
+Determine the severity independently based on:
+- the actual error evidence
+- impact indicated by the logs
+- affected component/system
+- historical RAG context when available
+
+Do NOT simply copy the severity supplied in CURRENT ERROR DATA.
+
+Return exactly one severity:
+CRITICAL, HIGH, MEDIUM, LOW, or INFO.
+
+If the supplied severity is UNKNOWN or empty, you must still
+make your own assessment from the available evidence.
 """
 
 import json
