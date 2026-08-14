@@ -10,6 +10,7 @@ interface AIAnalysisProgressProps {
   isCompleted: boolean;
   error: string | null;
   onClose?: () => void;
+  onViewResults?: () => void;
 }
 
 export default function AIAnalysisProgress({
@@ -18,6 +19,7 @@ export default function AIAnalysisProgress({
   isCompleted,
   error,
   onClose,
+  onViewResults,
 }: AIAnalysisProgressProps) {
   const [showDetails, setShowDetails] =
     useState(false);
@@ -543,7 +545,7 @@ export default function AIAnalysisProgress({
             {isCompleted && (
               <button
                 type="button"
-                onClick={onClose}
+                onClick={onViewResults}
                 className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
               >
                 View Analysis Results →

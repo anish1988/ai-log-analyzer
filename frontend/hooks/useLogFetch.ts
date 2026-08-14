@@ -106,7 +106,7 @@ export function useLogFetch() {
 
         console.log("Result Buckets:", data.results);
 
-        data.results?.forEach((bucket: any, bucketIndex: number) => {
+        data.results?.forEach((bucket, bucketIndex) => {
         console.log("--------------------------------------");
         console.log(`Bucket ${bucketIndex + 1}`);
 
@@ -114,7 +114,7 @@ export function useLogFetch() {
         console.log("Log File:", bucket.log_file);
         console.log("Matched Lines:", bucket.lines?.length);
 
-        bucket.lines?.forEach((line: any, lineIndex: number) => {
+        bucket.lines?.forEach((line, lineIndex) => {
             console.log(`Line ${lineIndex + 1}`);
             console.log(line);
         });

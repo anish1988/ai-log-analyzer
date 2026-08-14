@@ -42,7 +42,7 @@ export default function LogTypeSection() {
         setField( "customLogPath",  selectedLog.defaultPath );
     }
 
-  }, [selectedLog]);
+  }, [selectedLog, filters.customLogPath, setField]);
 
    if (filters.tier !== "web") {
         return null;

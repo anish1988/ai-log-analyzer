@@ -23,7 +23,7 @@ export interface SessionCardProps {
 
     errors: number;
     warnings: number;
-    raw: any;
+    raw: unknown;
   };
 
   selected: boolean;
@@ -46,7 +46,7 @@ export default function SessionCard({
       Lead: session.leadId,
       Campaign: session.campaign,
       Duration: session.duration,
-      Servers: session.server,
+    //  Servers: session.servers.join(", "),//session.server,
       Lines: session.totalLines,
       Errors: session.errors,
       Warnings: session.warnings,

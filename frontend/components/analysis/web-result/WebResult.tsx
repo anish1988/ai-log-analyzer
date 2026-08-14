@@ -16,7 +16,7 @@ import ErrorDetails from "./ErrorDetails";
 import LogLineTable from "./LogLineTable";
 
 import AIAnalysisLauncher from "@/components/analysis/ai-analysis/AIAnalysisLauncher";
-import AIAnalysisResultContainer from "@/components/analysis/ai-analysis/AIAnalysisResultContainer";
+//import AIAnalysisResultContainer from "@/components/analysis/ai-analysis/AIAnalysisResultContainer";
 
 // =============================================================================
 // PROPS
@@ -25,6 +25,10 @@ import AIAnalysisResultContainer from "@/components/analysis/ai-analysis/AIAnaly
 interface Props {
   data: WebLogFetchResponse;
   onBack: () => void;
+
+  onAIAnalysisCompleted?: (
+    response: AIAnalysisResponse,
+  ) => void;
 }
 
 // =============================================================================
@@ -34,6 +38,7 @@ interface Props {
 export default function WebResult({
   data,
   onBack,
+  onAIAnalysisCompleted,
 }: Props) {
 
   // ===========================================================================
@@ -89,7 +94,7 @@ export default function WebResult({
   // ===========================================================================
   // AI ANALYSIS RESULT
   // ===========================================================================
-
+{/*}
   const [
     aiAnalysisResponse,
     setAiAnalysisResponse,
@@ -107,7 +112,7 @@ export default function WebResult({
   ] = useState<string | null>(
     null,
   );
-
+   */}
   // ===========================================================================
   // TOGGLE ERROR SELECTION
   // ===========================================================================
@@ -439,103 +444,87 @@ export default function WebResult({
           ---------------------------------------------------------------- */}
 
           <AIAnalysisLauncher
-            selectedErrors={
-              selectedErrorsForAI
-            }
+              selectedErrors={
+                selectedErrorsForAI
+              }
 
-            onStarted={() => {
+              onStarted={() => {
+                console.log(
+                  "====================================",
+                );
 
-              console.log(
-                "====================================",
-              );
+                console.log(
+                  "AI ANALYSIS STARTED",
+                );
 
-              console.log(
-                "AI ANALYSIS STARTED",
-              );
+                console.log(
+                  "Selected Errors:",
+                  selectedErrorsForAI,
+                );
 
-              console.log(
-                "Selected Errors:",
-                selectedErrorsForAI,
-              );
+                console.log(
+                  "====================================",
+                );
+              }}
 
-              console.log(
-                "====================================",
-              );
+              onCompleted={(response) => {
+                console.log(
+                  "====================================",
+                );
 
-              // Remove any previous result/error
-              // when a new analysis starts.
+                console.log(
+                  "AI ANALYSIS BACKEND COMPLETED",
+                );
 
-              setAiAnalysisResponse(
-                null,
-              );
+                console.log(
+                  response,
+                );
 
-              setAiAnalysisError(
-                null,
-              );
-            }}
+                console.log(
+                  "====================================",
+                );
+              }}
 
-            onCompleted={(
-              response,
-            ) => {
+              onClosed={(response) => {
+                console.log(
+                  "====================================",
+                );
 
-              console.log(
-                "====================================",
-              );
+                console.log(
+                  "AI ANALYSIS RESULTS REQUESTED",
+                );
 
-              console.log(
-                "AI ANALYSIS COMPLETED",
-              );
+                console.log(
+                  response,
+                );
 
-              console.log(
-                response,
-              );
+                console.log(
+                  "====================================",
+                );
 
-              console.log(
-                "====================================",
-              );
+                onAIAnalysisCompleted?.(
+                  response,
+                );
+              }}
 
-              // Store completed response.
-              // This triggers the result container
-              // below to render.
+              onError={(message) => {
+                console.error(
+                  "====================================",
+                );
 
-              setAiAnalysisResponse(
-                response,
-              );
+                console.error(
+                  "AI ANALYSIS FAILED",
+                );
 
-              setAiAnalysisError(
-                null,
-              );
-            }}
+                console.error(
+                  message,
+                );
 
-            onError={(
-              message,
-            ) => {
-
-              console.error(
-                "====================================",
-              );
-
-              console.error(
-                "AI ANALYSIS FAILED",
-              );
-
-              console.error(
-                message,
-              );
-
-              console.error(
-                "====================================",
-              );
-
-              setAiAnalysisError(
-                message,
-              );
-
-              setAiAnalysisResponse(
-                null,
-              );
-            }}
-          />
+                console.error(
+                  "====================================",
+                );
+              }}
+            />
 
         </div>
 
@@ -545,78 +534,12 @@ export default function WebResult({
           AI ANALYSIS ERROR
       ====================================================================== */}
 
-      {aiAnalysisError && (
-        <div
-          className="
-            rounded-xl
-            border
-            border-rose-200
-            bg-rose-50
-            p-5
-          "
-        >
-
-          <div className="flex items-start gap-3">
-
-            <div
-              className="
-                flex
-                h-8
-                w-8
-                shrink-0
-                items-center
-                justify-center
-                rounded-full
-                bg-rose-100
-                font-bold
-                text-rose-600
-              "
-            >
-              !
-            </div>
-
-            <div className="min-w-0">
-
-              <h3
-                className="
-                  text-sm
-                  font-semibold
-                  text-rose-700
-                "
-              >
-                AI analysis failed
-              </h3>
-
-              <p
-                className="
-                  mt-1
-                  break-words
-                  text-sm
-                  leading-6
-                  text-rose-600
-                "
-              >
-                {aiAnalysisError}
-              </p>
-
-            </div>
-
-          </div>
-
-        </div>
-      )}
-
+    
       {/* =====================================================================
           AI ANALYSIS RESULTS
       ====================================================================== */}
 
-      {aiAnalysisResponse && (
-        <AIAnalysisResultContainer
-          response={
-            aiAnalysisResponse
-          }
-        />
-      )}
+
 
     </div>
   );

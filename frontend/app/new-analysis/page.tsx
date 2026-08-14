@@ -2,73 +2,237 @@
 "use client";
 
 import { useState } from "react";
-import { SearchFiltersProvider, SearchFiltersState } from "@/providers/SearchFiltersProvider";
+
+import {
+  SearchFiltersProvider,
+} from "@/providers/SearchFiltersProvider";
+
 import SearchFilterCard from "@/components/analysis/search-filter-card/SearchFilterCard";
+
 import type {
   LogFetchResponse,
   WebLogFetchResponse,
 } from "@/lib/types/preview";
 
+import type {
+  AIAnalysisResponse,
+} from "@/lib/types/aiAnalysis";
+
 import ResultRenderer from "@/components/analysis/result-renderer/ResultRenderer";
+
+import AIAnalysisResultContainer from "@/components/analysis/ai-analysis/AIAnalysisResultContainer";
+
 import Stepper from "@/components/stepper/Stepper";
-import { buildRequestSignature } from "@/lib/utils/requestSignature";
-import { AnalysisCache } from "@/lib/types/analysisCache";
-// import PreviewSession from "@/components/analysis/preview-session/PreviewSession";
+
+// =============================================================================
+// PAGE
+// =============================================================================
 
 export default function NewAnalysisPage() {
+
+  // ===========================================================================
+  // STEP
+  // ===========================================================================
+
   const [step, setStep] = useState(1);
+
+  // ===========================================================================
+  // LOG ANALYSIS RESULT
+  // ===========================================================================
+
+  const [
+    analysisResult,
+    setAnalysisResult,
+  ] = useState<
+    LogFetchResponse |
+    WebLogFetchResponse |
+    null
+  >(null);
+
+  // ===========================================================================
+  // AI ANALYSIS RESPONSE
+  // ===========================================================================
+
+  const [
+    aiAnalysisResponse,
+    setAIAnalysisResponse,
+  ] = useState<
+    AIAnalysisResponse | null
+  >(null);
+
+  // ===========================================================================
+  // STEP NAVIGATION
+  // ===========================================================================
+
   const goToStep1 = () => {
-  setStep(1);
-};
+    setStep(1);
+  };
 
-const goToStep2 = () => {
-  setStep(2);
-};
-  const [analysisResult, setAnalysisResult] = useState<LogFetchResponse | WebLogFetchResponse | null>(null);
-const [requestSignature, setRequestSignature] =
-  useState("");
+  const goToStep2 = () => {
+    setStep(2);
+  };
 
-const [cachedFilters, setCachedFilters] =
-  useState<SearchFiltersState | null>(null);
-  const [analysisCache, setAnalysisCache] =
-    useState<AnalysisCache | null>(null);
+  const goToStep3 = () => {
+    setStep(3);
+  };
+
+  // ===========================================================================
+  // STEP 1 → STEP 2
+  // ===========================================================================
+
+  const handleLogAnalysisCompleted = (
+    response:
+      | LogFetchResponse
+      | WebLogFetchResponse,
+  ) => {
+
+    console.log(
+      "=================================",
+    );
+
+    console.log(
+      "LOG ANALYSIS COMPLETED",
+    );
+
+    console.log(
+      response,
+    );
+
+    console.log(
+      "=================================",
+    );
+
+    setAnalysisResult(
+      response,
+    );
+
+    goToStep2();
+  };
+
+  // ===========================================================================
+  // STEP 2 → STEP 3
+  // ===========================================================================
+  //
+  // This callback is triggered by WebResult after the AI analysis popup
+  // has completed and the user closes the popup.
+  //
+  // IMPORTANT:
+  // We do NOT start another LLM request here.
+  //
+  // The response is the already completed AI analysis response.
+  // ===========================================================================
+
+  const handleAIAnalysisCompleted = (
+    response: AIAnalysisResponse,
+  ) => {
+
+    console.log(
+      "=================================",
+    );
+
+    console.log(
+      "AI ANALYSIS COMPLETED",
+    );
+
+    console.log(
+      response,
+    );
+
+    console.log(
+      "Moving to STEP 3",
+    );
+
+    console.log(
+      "=================================",
+    );
+
+    // Store the already completed AI response.
+    setAIAnalysisResponse(
+      response,
+    );
+
+    // Replace Step 2 with Step 3.
+    goToStep3();
+  };
+
+  // ===========================================================================
+  // STEP 3 → STEP 2
+  // ===========================================================================
+
+ 
+
+  // ===========================================================================
+  // RENDER
+  // ===========================================================================
 
   return (
     <SearchFiltersProvider>
+
       <div className="mx-auto max-w-7xl px-6 py-8">
-        <Stepper currentStep={step} />
+
+        {/* ================================================================== */}
+        {/* STEPPER                                                            */}
+        {/* ================================================================== */}
+
+        <Stepper
+          currentStep={step}
+        />
+
         <div className="mt-8">
-        {step === 1 && (
-          
-          // <SearchFilterCard  onNext={(response) => {  setAnalysisResult(response);  setStep(2);  }} />
-          <SearchFilterCard
-        onNext={(response) => {
 
-        console.log("=================================");
-        console.log("STEP-2");
-        console.log("Tier :", response);
-        console.log("=================================");
+          {/* ================================================================ */}
+          {/* STEP 1                                                           */}
+          {/* ================================================================ */}
 
-        setAnalysisResult(response);
+          {step === 1 && (
+            <SearchFilterCard
+              onNext={
+                handleLogAnalysisCompleted
+              }
+            />
+          )}
 
-        goToStep2();
+          {/* ================================================================ */}
+          {/* STEP 2                                                           */}
+          {/* ================================================================ */}
 
-    }}
-/>
-      
-      
-      
-      )}
+          {step === 2 &&
+            analysisResult && (
+              <ResultRenderer
+                tier={
+                  analysisResult.success
+                    ? "web"
+                    : "telephony"
+                }
+                data={
+                  analysisResult
+                }
+                onBack={
+                  goToStep1
+                }
+                onAIAnalysisCompleted={
+                  handleAIAnalysisCompleted
+                }
+              />
+            )}
 
-       {step === 2 && analysisResult && (
-          <ResultRenderer
-              tier={analysisResult.success ? "web" : "telephony"}
-              data={analysisResult}
-              onBack={goToStep1}
-          />
-    )}
-    </div>
+          {/* ================================================================ */}
+          {/* STEP 3                                                           */}
+          {/* ================================================================ */}
+
+          {step === 3 &&
+            aiAnalysisResponse && (
+              <AIAnalysisResultContainer
+                response={
+                  aiAnalysisResponse
+                }
+              />
+            )}
+
+        </div>
+
       </div>
+
     </SearchFiltersProvider>
   );
 }

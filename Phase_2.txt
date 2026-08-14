@@ -1,0 +1,122 @@
+Then Phase 2
+
+Once Phase 1 is closed, I'd suggest structuring Phase 2 like this:
+
+Phase 2 – Rich Error Analysis UI
+Component Refactoring
+ErrorList
+ErrorDetails
+LogLineTable
+Search & Filter
+Search errors by title.
+Filter by severity.
+Filter by timestamp.
+Code Highlighting
+Highlight keywords.
+Highlight exception names.
+Highlight stack traces.
+Expand / Collapse
+Collapse long stack traces.
+Expand on demand.
+Copy Features
+Copy selected error.
+Copy full stack trace.
+Copy JSON.
+AI Integration Preparation
+Add "Analyze with AI" actions.
+Multi-select errors for AI analysis.
+Prepare the UI for the next workflow.
+
+
+My Proposed Implementation Order
+Phase 1
+✅ useWebLogFetch()
+✅ web.ts types
+✅ ResultRenderer
+Phase 2
+✅ WebResult
+✅ ErrorTree
+✅ ErrorDetails
+Phase 3
+✅ Syntax highlighting
+✅ Search within an error
+✅ Collapse/Expand
+✅ Copy error
+✅ Download JSON
+
+
+STEP 3 — AI + RAG
+
+3.1 Dependencies / pgvector         ✅ 🔒
+3.2 RAG Knowledge Schema            ✅ 🔒
+3.3 LangGraph State                 ✅ 🔒
+3.4 Embedding + Knowledge Store     ✅ 🔒
+3.5 RAG Retrieval                   ✅ 🔒
+3.6 RAG Decision Engine             ✅ 🔒
+3.7 LangGraph Workflow              ✅ 🔒
+3.8 LLM Analysis Architecture
+3.9 Web Prompt + LLM
+3.10 Telephony Prompt + LLM
+3.11 MySQL Prompt + LLM
+3.12 Progress Events
+3.13 FastAPI AI Endpoint
+3.14 Step 3 Frontend      
+
+| Step     | Task                                               | Status             |
+| -------- | -------------------------------------------------- | ------------------ |
+| **3.1**  | Dependencies / pgvector                            | ✅ 🔒               |
+| **3.2**  | RAG Knowledge Schema                               | ✅ 🔒               |
+| **3.3**  | LangGraph State                                    | ✅ 🔒               |
+| **3.4**  | Embedding + Knowledge Store                        | ✅ 🔒               |
+| **3.5**  | RAG Retrieval                                      | ✅ 🔒               |
+| **3.6**  | RAG Decision Engine                                | ✅ 🔒               |
+| **3.7**  | LangGraph Workflow                                 | ✅ 🔒               |
+| **3.8**  | LLM Analysis Architecture                          | ✅ 🔒               |
+| **3.9**  | Web/Laravel Prompt + Structured LLM                | ✅ 🔒               |
+| **3.10** | LangGraph + Web/Laravel LLM Integration + E2E Test | ✅ 🔒               |
+| **3.11** | Telephony Prompt + LLM                             | ✅ 🔒               |
+| **3.12** | MySQL Prompt + LLM                                 | ⏳                  |
+| **3.13** | Progress Events                                    | ✅ 🔒               |
+| **3.14** | FastAPI AI Endpoint                                | ⏳                  |
+| **3.15** | Step 3 Frontend                                    | ⏳                  |
+
+
+
+3.15.1  AI API types + API service
+3.15.2  useAIAnalysis hook
+3.15.3  Selected-error mapping
+3.15.4  AI progress UI
+3.15.5  AI result container
+3.15.6  RAG status component
+3.15.7  Root Cause / Evidence
+3.15.8  Solution / Optimization
+3.15.9  Test Result / Jira
+3.15.10 Error/loading/empty states
+3.15.11 Integrate into new-analysis/page.tsx
+3.15.12 Full frontend test
+
+
+3.15.4.1  Progress Event Broker
+3.15.4.2  SSE FastAPI endpoint
+3.15.4.3  Connect LangGraph progress events → broker
+3.15.4.4  Frontend SSE client hook
+3.15.4.5  AIAnalysisProgress component
+3.15.4.6  Progress bar + current task UI
+3.15.4.7  Multi-error overall progress
+3.15.4.8  End-to-end test
+
+
+https://chatgpt.com/share/6a7ed5a0-1210-83ee-9aca-6daf2eaf972a
+
+Observation
+
+1) nee dto replace step 2 and show only step3 means only AI Analysis Results . at this moment AI Analysis Results diplay after Web Log Analysis.
+2) we also get the severity from LLM . LLM use the memory an danalysys own self what is the servality of error and we need to dispy in UI.
+3) Also why it show  No historical match found . need to expalin and reserch on that. 
+4)when we upload same file again and again . it should fetch from RAG or memory rather than calling LLM everytime. if new roor found thne we need to send  to LLM
+5) In Header we give on eoption to create a ticket on Jira. once user click on button . it should automayically create a ticket and enter all display in jira ticket which i hav ein jira desription section by section.
+
+
+6) stepper not move after step 2. it should move on each step
+7) when we change the Log type . it not chnage the default log path . it should e chnage according to selection of log type each time.
+8) nee dto display if file not found and what ever error in UI

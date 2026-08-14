@@ -70,6 +70,14 @@ class TelephonyAIAnalysisResponse(BaseModel):
         )
     )
 
+    severity: str = Field(
+        description=(
+            "Severity of the error based on the supplied log evidence "
+            "and historical RAG context. "
+            "Use exactly one of: CRITICAL, HIGH, MEDIUM, LOW, INFO."
+        )
+    )
+
     error_summary: str = Field(
         description=(
             "Concise summary of the telephony error."
