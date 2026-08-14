@@ -1,320 +1,436 @@
 "use client";
 
-import { useState } from "react";
-
 import type {
-  AIAnalysisResult,
+  AIAnalysisResultResponse,
 } from "@/lib/types/aiAnalysis";
 
+// =============================================================================
+// PROPS
+// =============================================================================
+
 interface AIAnalysisSolutionOptimizationProps {
-  result: AIAnalysisResult;
+  result: AIAnalysisResultResponse;
 }
+
+// =============================================================================
+// COMPONENT
+// =============================================================================
 
 export default function AIAnalysisSolutionOptimization({
   result,
 }: AIAnalysisSolutionOptimizationProps) {
+  const solution =
+    result.solution?.trim() || "";
+
+  const optimization =
+    result.optimization?.trim() || "";
+
+  const hasSolution =
+    solution.length > 0;
+
+  const hasOptimization =
+    optimization.length > 0;
+
   return (
-    <section className="space-y-4">
-      {/* ================================================================ */}
-      {/* Solution                                                        */}
-      {/* ================================================================ */}
+    <section className="space-y-6">
 
-      <AnalysisTextCard
-        title="Recommended Solution"
-        description="Recommended actions to resolve the identified root cause."
-        icon="✓"
-        iconClassName="bg-emerald-50 text-emerald-600"
-        content={result.solution}
-        emptyMessage="No solution was returned by the AI analysis."
-        defaultExpanded
-      />
+      {/* ==================================================================== */}
+      {/* HEADER                                                               */}
+      {/* ==================================================================== */}
 
-      {/* ================================================================ */}
-      {/* Optimization                                                     */}
-      {/* ================================================================ */}
+      <div className="flex items-start gap-3">
 
-      <AnalysisTextCard
-        title="Optimization & Prevention"
-        description="Recommendations to reduce the chance of the issue recurring."
-        icon="↗"
-        iconClassName="bg-indigo-50 text-indigo-600"
-        content={result.optimization}
-        emptyMessage="No optimization recommendations were returned."
-      />
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+          →
+        </div>
+
+        <div>
+
+          <h3 className="text-lg font-semibold text-slate-800">
+            Solution & Optimization
+          </h3>
+
+          <p className="mt-1 text-sm text-slate-500">
+            Recommended resolution and improvements to prevent the issue
+            from recurring.
+          </p>
+
+        </div>
+
+      </div>
+
+      {/* ==================================================================== */}
+      {/* SOLUTION + OPTIMIZATION                                              */}
+      {/* ==================================================================== */}
+
+      <div className="grid gap-5 lg:grid-cols-2">
+
+        {/* ================================================================== */}
+        {/* SOLUTION                                                           */}
+        {/* ================================================================== */}
+
+        <SolutionCard
+          title="Recommended Solution"
+          description="Actions recommended to resolve the current issue."
+          value={solution}
+          available={hasSolution}
+          variant="solution"
+        />
+
+        {/* ================================================================== */}
+        {/* OPTIMIZATION                                                        */}
+        {/* ================================================================== */}
+
+        <SolutionCard
+          title="Optimization"
+          description="Improvements recommended to reduce the chance of recurrence."
+          value={optimization}
+          available={hasOptimization}
+          variant="optimization"
+        />
+
+      </div>
+
+      {/* ==================================================================== */}
+      {/* RESOLUTION SOURCE                                                    */}
+      {/* ==================================================================== */}
+
+      <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+
+          <div>
+
+            <h4 className="text-sm font-semibold text-slate-800">
+              Resolution Source
+            </h4>
+
+            <p className="mt-1 text-xs text-slate-400">
+              Indicates where the recommended resolution originated.
+            </p>
+
+          </div>
+
+          <SourceBadge
+            source={result.source}
+          />
+
+        </div>
+
+        {/* RAG information */}
+
+        {result.rag_match && (
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+
+            <InfoItem
+              label="Historical Match"
+              value="Found"
+            />
+
+            <InfoItem
+              label="Knowledge ID"
+              value={
+                result.rag_knowledge_id !==
+                  null &&
+                result.rag_knowledge_id !==
+                  undefined
+                  ? String(
+                      result.rag_knowledge_id,
+                    )
+                  : "N/A"
+              }
+            />
+
+          </div>
+        )}
+
+      </div>
+
+      {/* ==================================================================== */}
+      {/* ACTION SUMMARY                                                       */}
+      {/* ==================================================================== */}
+
+      {(hasSolution ||
+        hasOptimization) && (
+        <div className="rounded-xl border border-slate-200 bg-white p-5">
+
+          <h4 className="text-sm font-semibold text-slate-800">
+            Recommended Action Plan
+          </h4>
+
+          <div className="mt-4 space-y-3">
+
+            {hasSolution && (
+              <ActionItem
+                number={1}
+                title="Resolve the current issue"
+                description={
+                  "Apply the recommended solution to address the identified root cause."
+                }
+              />
+            )}
+
+            {hasOptimization && (
+              <ActionItem
+                number={
+                  hasSolution ? 2 : 1
+                }
+                title="Prevent recurrence"
+                description={
+                  "Apply the optimization recommendations to improve long-term reliability."
+                }
+              />
+            )}
+
+          </div>
+
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* EMPTY STATE                                                          */}
+      {/* ==================================================================== */}
+
+      {!hasSolution &&
+        !hasOptimization && (
+          <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6">
+
+            <div className="flex items-start gap-3">
+
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-200 text-slate-500">
+                i
+              </div>
+
+              <div>
+
+                <h4 className="text-sm font-semibold text-slate-700">
+                  Solution information not available
+                </h4>
+
+                <p className="mt-1 text-sm leading-6 text-slate-500">
+                  The analysis completed, but no solution or optimization
+                  recommendation was returned.
+                </p>
+
+              </div>
+
+            </div>
+
+          </div>
+        )}
+
     </section>
   );
 }
 
 // =============================================================================
-// ANALYSIS TEXT CARD
+// SOLUTION CARD
 // =============================================================================
 
-interface AnalysisTextCardProps {
+interface SolutionCardProps {
   title: string;
   description: string;
-  icon: string;
-  iconClassName: string;
-  content?: string | null;
-  emptyMessage: string;
-  defaultExpanded?: boolean;
+  value: string;
+  available: boolean;
+  variant:
+    | "solution"
+    | "optimization";
 }
 
-function AnalysisTextCard({
+function SolutionCard({
   title,
   description,
-  icon,
-  iconClassName,
-  content,
-  emptyMessage,
-  defaultExpanded = false,
-}: AnalysisTextCardProps) {
-  const [expanded, setExpanded] =
-    useState(defaultExpanded);
-
-  const hasContent =
-    Boolean(content?.trim());
+  value,
+  available,
+  variant,
+}: SolutionCardProps) {
+  const isSolution =
+    variant === "solution";
 
   return (
-    <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-      {/* ------------------------------------------------------------------ */}
-      {/* Header                                                             */}
-      {/* ------------------------------------------------------------------ */}
+    <div
+      className={`rounded-xl border p-5 ${
+        isSolution
+          ? "border-emerald-200 bg-emerald-50/40"
+          : "border-indigo-200 bg-indigo-50/40"
+      }`}
+    >
 
-      <button
-        type="button"
-        onClick={() =>
-          setExpanded(
-            previous => !previous,
-          )
-        }
-        aria-expanded={expanded}
-        className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition hover:bg-slate-50"
-      >
-        <div className="flex min-w-0 items-center gap-3">
-          <div
-            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-sm font-semibold ${iconClassName}`}
-          >
-            {icon}
-          </div>
+      {/* Header */}
 
-          <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-slate-800">
-              {title}
-            </h3>
+      <div className="flex items-start gap-3">
 
-            <p className="mt-1 text-xs text-slate-500">
-              {description}
-            </p>
-          </div>
-        </div>
-
-        {/* Expand / Collapse */}
-
-        <span
-          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-transform ${
-            expanded
-              ? "rotate-180"
-              : ""
+        <div
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+            isSolution
+              ? "bg-emerald-100 text-emerald-700"
+              : "bg-indigo-100 text-indigo-700"
           }`}
         >
-          ↓
-        </span>
-      </button>
+          {isSolution ? "✓" : "↗"}
+        </div>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Content                                                            */}
-      {/* ------------------------------------------------------------------ */}
+        <div className="min-w-0">
 
-      {expanded && (
-        <div className="border-t border-slate-200 bg-slate-50/50 p-5">
-          {!hasContent ? (
-            <div className="rounded-xl border border-dashed border-slate-200 bg-white p-5 text-center">
-              <p className="text-sm text-slate-400">
-                {emptyMessage}
-              </p>
-            </div>
-          ) : (
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
-              <div className="max-h-[420px] overflow-auto">
-                <AITextContent
-                  content={content ?? ""}
-                />
-              </div>
-            </div>
-          )}
+          <h4 className="text-sm font-semibold text-slate-800">
+            {title}
+          </h4>
+
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            {description}
+          </p>
+
+        </div>
+
+      </div>
+
+      {/* Content */}
+
+      {available ? (
+        <div className="mt-5 rounded-lg border border-white/80 bg-white p-4 shadow-sm">
+
+          <p className="whitespace-pre-wrap text-sm leading-7 text-slate-700">
+            {value}
+          </p>
+
+        </div>
+      ) : (
+        <div className="mt-5 rounded-lg border border-dashed border-slate-200 bg-white/70 p-4">
+
+          <p className="text-sm italic text-slate-400">
+            No recommendation provided.
+          </p>
+
         </div>
       )}
-    </section>
+
+    </div>
   );
 }
 
 // =============================================================================
-// AI TEXT CONTENT
+// SOURCE BADGE
 // =============================================================================
 
-interface AITextContentProps {
-  content: string;
+interface SourceBadgeProps {
+  source?: string | null;
 }
 
-function AITextContent({
-  content,
-}: AITextContentProps) {
-  const sections =
-    content
-      .split(/\n{2,}/)
-      .map(section => section.trim())
-      .filter(Boolean);
+function SourceBadge({
+  source,
+}: SourceBadgeProps) {
+  const normalizedSource =
+    source?.trim().toLowerCase() ||
+    "unknown";
+
+  const isRag =
+    normalizedSource === "rag";
+
+  const isLlm =
+    normalizedSource === "llm";
+
+  const label = isRag
+    ? "Historical Knowledge"
+    : isLlm
+      ? "AI / LLM Analysis"
+      : formatSource(
+          normalizedSource,
+        );
+
+  const className = isRag
+    ? "bg-emerald-50 text-emerald-700"
+    : isLlm
+      ? "bg-indigo-50 text-indigo-700"
+      : "bg-slate-100 text-slate-600";
 
   return (
-    <div className="space-y-4">
-      {sections.map(
-        (section, index) => {
-          const lines =
-            section
-              .split("\n")
-              .map(line =>
-                line.trimEnd(),
-              );
+    <span
+      className={`rounded-full px-3 py-1.5 text-xs font-semibold ${className}`}
+    >
+      {label}
+    </span>
+  );
+}
 
-          return (
-            <div
-              key={index}
-              className="text-sm leading-6 text-slate-700"
-            >
-              {lines.map(
-                (line, lineIndex) => {
-                  const trimmed =
-                    line.trim();
+// =============================================================================
+// INFO ITEM
+// =============================================================================
 
-                  if (!trimmed) {
-                    return (
-                      <div
-                        key={lineIndex}
-                        className="h-2"
-                      />
-                    );
-                  }
+interface InfoItemProps {
+  label: string;
+  value: string;
+}
 
-                  // --------------------------------------------------------
-                  // Numbered steps
-                  // --------------------------------------------------------
+function InfoItem({
+  label,
+  value,
+}: InfoItemProps) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white px-4 py-3">
 
-                  const numberedMatch =
-                    trimmed.match(
-                      /^(\d+)[.)]\s+(.*)$/,
-                    );
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+        {label}
+      </p>
 
-                  if (
-                    numberedMatch
-                  ) {
-                    return (
-                      <div
-                        key={lineIndex}
-                        className="mb-2 flex gap-3"
-                      >
-                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-[11px] font-semibold text-indigo-600">
-                          {
-                            numberedMatch[1]
-                          }
-                        </span>
+      <p className="mt-1 text-sm font-semibold text-slate-700">
+        {value}
+      </p>
 
-                        <span className="min-w-0 flex-1">
-                          {
-                            numberedMatch[2]
-                          }
-                        </span>
-                      </div>
-                    );
-                  }
-
-                  // --------------------------------------------------------
-                  // Bullet points
-                  // --------------------------------------------------------
-
-                  const bulletMatch =
-                    trimmed.match(
-                      /^[-*•]\s+(.*)$/,
-                    );
-
-                  if (
-                    bulletMatch
-                  ) {
-                    return (
-                      <div
-                        key={lineIndex}
-                        className="mb-2 flex gap-3"
-                      >
-                        <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500" />
-
-                        <span className="min-w-0 flex-1">
-                          {
-                            bulletMatch[1]
-                          }
-                        </span>
-                      </div>
-                    );
-                  }
-
-                  // --------------------------------------------------------
-                  // Command / code-like lines
-                  // --------------------------------------------------------
-
-                  const looksLikeCommand =
-                    trimmed.startsWith(
-                      "asterisk -rvvv",
-                    ) ||
-                    trimmed.startsWith(
-                      "pjsip ",
-                    ) ||
-                    trimmed.startsWith(
-                      "sip ",
-                    ) ||
-                    trimmed.startsWith(
-                      "sudo ",
-                    ) ||
-                    trimmed.startsWith(
-                      "docker ",
-                    ) ||
-                    trimmed.startsWith(
-                      "curl ",
-                    ) ||
-                    trimmed.startsWith(
-                      "npm ",
-                    );
-
-                  if (
-                    looksLikeCommand
-                  ) {
-                    return (
-                      <div
-                        key={lineIndex}
-                        className="mb-2 overflow-x-auto rounded-lg bg-slate-900 px-4 py-3"
-                      >
-                        <code className="whitespace-pre font-mono text-xs text-slate-200">
-                          {trimmed}
-                        </code>
-                      </div>
-                    );
-                  }
-
-                  // --------------------------------------------------------
-                  // Normal paragraph
-                  // --------------------------------------------------------
-
-                  return (
-                    <p
-                      key={lineIndex}
-                      className="mb-2 break-words"
-                    >
-                      {trimmed}
-                    </p>
-                  );
-                },
-              )}
-            </div>
-          );
-        },
-      )}
     </div>
+  );
+}
+
+// =============================================================================
+// ACTION ITEM
+// =============================================================================
+
+interface ActionItemProps {
+  number: number;
+  title: string;
+  description: string;
+}
+
+function ActionItem({
+  number,
+  title,
+  description,
+}: ActionItemProps) {
+  return (
+    <div className="flex items-start gap-3 rounded-lg border border-slate-100 bg-slate-50 p-4">
+
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white text-xs font-bold text-indigo-600 ring-1 ring-slate-200">
+        {number}
+      </div>
+
+      <div>
+
+        <h5 className="text-sm font-semibold text-slate-700">
+          {title}
+        </h5>
+
+        <p className="mt-1 text-xs leading-5 text-slate-500">
+          {description}
+        </p>
+
+      </div>
+
+    </div>
+  );
+}
+
+// =============================================================================
+// SOURCE FORMATTER
+// =============================================================================
+
+function formatSource(
+  source: string,
+): string {
+  if (!source) {
+    return "Unknown";
+  }
+
+  return (
+    source.charAt(0).toUpperCase() +
+    source.slice(1)
   );
 }
