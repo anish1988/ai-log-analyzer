@@ -25,29 +25,28 @@ export default function LogTypeSection() {
   }, [filters.logType]);
 
   //
-  // Auto populate default path
+  // Auto populate default path whenever
+  // the selected log type changes.
   //
   useEffect(() => {
-
     if (!selectedLog) {
       return;
     }
 
-    setField( "defaultLogPath", selectedLog.defaultPath );
+    setField(
+      "defaultLogPath",
+      selectedLog.defaultPath
+    );
 
-    //
-    // Initially custom path = default path
-    //
-    if (!filters.customLogPath) {  
-        setField( "customLogPath",  selectedLog.defaultPath );
-    }
+    setField(
+      "customLogPath",
+      selectedLog.defaultPath
+    );
+  }, [selectedLog, setField]);
 
-  }, [selectedLog, filters.customLogPath, setField]);
-
-   if (filters.tier !== "web") {
-        return null;
-    }
-
+  if (filters.tier !== "web") {
+    return null;
+  }
 
   return (
     <div className="space-y-5">
@@ -62,7 +61,10 @@ export default function LogTypeSection() {
         <select
           value={filters.logType}
           onChange={(e) =>
-            setField("logType", e.target.value)
+            setField(
+              "logType",
+              e.target.value
+            )
           }
           className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm focus:border-indigo-500 focus:outline-none"
         >
@@ -90,7 +92,9 @@ export default function LogTypeSection() {
 
         <input
           type="text"
-          value={filters.customLogPath ?? ""}
+          value={
+            filters.customLogPath ?? ""
+          }
           onChange={(e) =>
             setField(
               "customLogPath",

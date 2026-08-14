@@ -74,7 +74,9 @@ from app.ai.progress.events import ProgressStatus
 
 from app.ai.progress.tasks import ProgressTasks
 
+from app.ai.rag.knowledge_store import KnowledgeStore
 
+knowledge_store = KnowledgeStore()
 # =============================================================================
 # SERVICES
 # =============================================================================
@@ -1086,6 +1088,121 @@ async def run_llm_analysis_node(
         ],
     }
 
+# =============================================================================
+# NODE — STORE LLM KNOWLEDGE
+# =============================================================================
+
+
+async def store_llm_knowledge(
+    state: AIAnalysisState,
+) -> dict:
+    """
+    Store a newly completed LLM analysis in the RAG knowledge base.
+
+    IMPORTANT:
+    - This node runs ONLY after LLM analysis.
+    - RAG-reused results do not come here.
+    - The embedding generated before RAG retrieval is reused.
+    - No additional embedding API call is performed.
+    """
+
+    current_error = state.get(
+        "current_error"
+    )
+
+    current_ai_result = state.get(
+        "current_ai_result"
+    )
+
+    normalized_error = state.get(
+        "normalized_error",
+        {},
+    )
+
+    embedding_text = state.get(
+        "embedding_text",
+        "",
+    )
+
+    embedding = normalized_error.get(
+        "embedding"
+    )
+
+    if not current_error:
+        raise ValueError(
+            "Cannot store LLM knowledge: "
+            "current_error is missing."
+        )
+
+    if not current_ai_result:
+        raise ValueError(
+            "Cannot store LLM knowledge: "
+            "current_ai_result is missing."
+        )
+
+    if not embedding:
+        raise ValueError(
+            "Cannot store LLM knowledge: "
+            "RAG embedding is missing."
+        )
+
+    if not embedding_text:
+        raise ValueError(
+            "Cannot store LLM knowledge: "
+            "embedding_text is empty."
+        )
+
+    print("=" * 100)
+    print("LANGGRAPH - STORE LLM KNOWLEDGE")
+    print("=" * 100)
+
+    print(
+        f"Error ID       : "
+        f"{current_error.get('error_id', '')}"
+    )
+
+    print(
+        f"Log Type       : "
+        f"{current_error.get('log_type', '')}"
+    )
+
+    print(
+        f"Error Signature: "
+        f"{current_ai_result.get('error_signature', '')}"
+    )
+
+    print(
+        f"Embedding Size : "
+        f"{len(embedding)}"
+    )
+
+    knowledge_id = await knowledge_store.store_knowledge(
+        error=current_error,
+        embedding=embedding,
+        embedding_text=embedding_text,
+        analysis=current_ai_result,
+    )
+
+    print(
+        f"Knowledge ID   : "
+        f"{knowledge_id}"
+    )
+
+    print(
+        "LLM analysis successfully stored in RAG."
+    )
+
+    print("=" * 100)
+
+    return {
+        "current_task": (
+            "Historical knowledge stored"
+        ),
+
+        "progress": 85,
+
+        "error": None,
+    }
 
 # =============================================================================
 # NODE 9
@@ -1379,6 +1496,11 @@ def build_ai_analysis_graph():
     )
 
     graph.add_node(
+        "store_llm_knowledge",
+        store_llm_knowledge,
+    )
+
+    graph.add_node(
         "move_to_next_error",
         move_to_next_error,
     )
@@ -1466,19 +1588,24 @@ def build_ai_analysis_graph():
     # LLM ANALYSIS → NEXT ERROR / FINALIZE
     # =========================================================================
 
-    graph.add_conditional_edges(
-        "llm_analysis",
-        route_after_result,
-        {
-            "next_error": (
-                "move_to_next_error"
-            ),
+    graph.add_edge(
+            "llm_analysis",
+            "store_llm_knowledge",
+        )
 
-            "finalize": (
-                "finalize_analysis"
-            ),
-        },
-    )
+    graph.add_conditional_edges(
+            "store_llm_knowledge",
+            route_after_result,
+            {
+                "next_error": (
+                    "move_to_next_error"
+                ),
+
+                "finalize": (
+                    "finalize_analysis"
+                ),
+            },
+        )
 
     # =========================================================================
     # LOOP

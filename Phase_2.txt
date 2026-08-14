@@ -110,13 +110,13 @@ https://chatgpt.com/share/6a7ed5a0-1210-83ee-9aca-6daf2eaf972a
 
 Observation
 
-1) nee dto replace step 2 and show only step3 means only AI Analysis Results . at this moment AI Analysis Results diplay after Web Log Analysis.
-2) we also get the severity from LLM . LLM use the memory an danalysys own self what is the servality of error and we need to dispy in UI.
+1) nee dto replace step 2 and show only step3 means only AI Analysis Results . at this moment AI Analysis Results diplay after Web Log Analysis. = Done
+2) we also get the severity from LLM . LLM use the memory an danalysys own self what is the servality of error and we need to dispy in UI. = Done
 3) Also why it show  No historical match found . need to expalin and reserch on that. 
 4)when we upload same file again and again . it should fetch from RAG or memory rather than calling LLM everytime. if new roor found thne we need to send  to LLM
 5) In Header we give on eoption to create a ticket on Jira. once user click on button . it should automayically create a ticket and enter all display in jira ticket which i hav ein jira desription section by section.
 
 
-6) stepper not move after step 2. it should move on each step
-7) when we change the Log type . it not chnage the default log path . it should e chnage according to selection of log type each time.
+6) stepper not move after step 2. it should move on each step = Done
+7) when we change the Log type . it not chnage the default log path . it should e chnage according to selection of log type each time. = Done
 8) nee dto display if file not found and what ever error in UI

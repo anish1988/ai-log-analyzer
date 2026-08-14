@@ -193,6 +193,16 @@ async def run_llm_analysis(
             "",
         ),
 
+        "error_signature": (
+            state.get(
+                "normalized_error",
+                {},
+            ).get(
+                "error_signature",
+                "",
+            )
+        ),
+
         "tier": current_error.get(
             "tier",
             "",
@@ -218,7 +228,10 @@ async def run_llm_analysis(
             "",
         ),
 
-        "severity": analysis.get("severity", ""),
+        "severity": ai_result.get(
+            "severity",
+            "",
+        ),
 
         "timestamp": current_error.get(
             "timestamp",
