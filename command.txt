@@ -28,3 +28,22 @@ ForEach-Object {
 
 
 docker exec -it ai-log-analyzer-frontend sh -c "npx tsc --noEmit" = check any error/issue in react project 
+
+
+Use one terminal and run:
+
+curl -N http://localhost:8000/api/ai/progress/TEST-3.15.4-SSE
+
+You should immediately get:
+
+event: connected
+data: {"type":"connected","request_id":"TEST-3.15.4-SSE","message":"AI progress stream connected."}
+
+Keep this terminal running.
+
+Then use a second terminal
+
+Send a real AI request using the same request ID:
+
+curl -i -X POST http://localhost:8000/api/ai/analyze -H "Content-Type: application/json" -d "{\"request_id\":\"TEST-3.15.4-SSE\",\"selected_errors\":[{\"error_id\":\"TEST-3.15.4-SSE-001\",\"tier\":\"web\",\"log_type\":\"apache_error\",\"server\":\"web-01\",\"file_name\":\"error.log\",\"file_path\":\"/var/log/apache2/error.log\",\"title\":\"Apache SSL certificate warning\",\"severity\":\"warning\",\"timestamp\":\"\",\"start_line\":1,\"end_line\":1,\"total_lines\":1,\"error_content\":\"AH01906: server certificate is a CA certificate\",\"lines\":[{\"line_number\":1,\"raw\":\"AH01906: server certificate is a CA certificate\"}]}]}"
+Terminal 1 should now start receiving events

@@ -2,10 +2,12 @@
 AI Analysis Progress Publisher.
 
 The publisher converts progress information into
-ProgressEvent objects and sends them to an optional
-callback.
+ProgressEvent objects and sends them to:
 
-The publisher is intentionally transport-independent.
+    1. Existing callback
+    2. Real-time subscribers
+
+The publisher remains transport-independent.
 
 Future transport options:
 
@@ -19,6 +21,8 @@ Future transport options:
           |
           +--> WebSocket
 """
+
+import asyncio
 
 from collections.abc import Awaitable, Callable
 from typing import Any
@@ -43,28 +47,18 @@ ProgressCallback = Callable[
 # PROGRESS PUBLISHER
 # =============================================================================
 
+
 class ProgressPublisher:
     """
     Publishes AI analysis progress events.
 
-    Parameters
-    ----------
-    callback:
-        Optional callback that receives every ProgressEvent.
+    Supports:
 
-        It may be either:
+        - Optional callback
+        - Real-time request-specific subscribers
 
-            sync:
-                def callback(event): ...
-
-        or:
-
-            async:
-                async def callback(event): ...
-
-    If no callback is provided, the publisher will still
-    create and print the event. This is useful during
-    development and testing.
+    Subscribers are keyed by request_id so that progress from
+    one AI analysis request is never sent to another request.
     """
 
     def __init__(
@@ -73,6 +67,113 @@ class ProgressPublisher:
     ) -> None:
 
         self.callback = callback
+
+        # ---------------------------------------------------------------------
+        # Real-time subscribers
+        #
+        # request_id -> set of asyncio.Queue
+        #
+        # Multiple clients may subscribe to the same request.
+        # ---------------------------------------------------------------------
+
+        self._subscribers: dict[
+            str,
+            set[asyncio.Queue[ProgressEvent]],
+        ] = {}
+
+        self._subscriber_lock = asyncio.Lock()
+
+    # =========================================================================
+    # SUBSCRIBE
+    # =========================================================================
+
+    async def subscribe(
+        self,
+        request_id: str,
+    ) -> asyncio.Queue[ProgressEvent]:
+        """
+        Subscribe to progress events for one request.
+
+        Returns
+        -------
+        asyncio.Queue
+            Queue receiving ProgressEvent objects belonging
+            to the supplied request_id.
+        """
+
+        queue: asyncio.Queue[
+            ProgressEvent
+        ] = asyncio.Queue()
+
+        async with self._subscriber_lock:
+
+            subscribers = self._subscribers.setdefault(
+                request_id,
+                set(),
+            )
+
+            subscribers.add(queue)
+
+        return queue
+
+    # =========================================================================
+    # UNSUBSCRIBE
+    # =========================================================================
+
+    async def unsubscribe(
+        self,
+        request_id: str,
+        queue: asyncio.Queue[ProgressEvent],
+    ) -> None:
+        """
+        Remove one subscriber from a request.
+        """
+
+        async with self._subscriber_lock:
+
+            subscribers = self._subscribers.get(
+                request_id
+            )
+
+            if not subscribers:
+                return
+
+            subscribers.discard(queue)
+
+            if not subscribers:
+
+                self._subscribers.pop(
+                    request_id,
+                    None,
+                )
+
+    # =========================================================================
+    # PUBLISH TO SUBSCRIBERS
+    # =========================================================================
+
+    async def _publish_to_subscribers(
+        self,
+        event: ProgressEvent,
+    ) -> None:
+        """
+        Send the event to all subscribers listening
+        to this event's request_id.
+        """
+
+        async with self._subscriber_lock:
+
+            subscribers = list(
+                self._subscribers.get(
+                    event.request_id,
+                    set(),
+                )
+            )
+
+        for queue in subscribers:
+
+            await queue.put(
+                event
+            )
 
     # =========================================================================
     # PUBLISH
@@ -96,10 +197,12 @@ class ProgressPublisher:
         """
         Create and publish one ProgressEvent.
 
-        Returns
-        -------
-        ProgressEvent
-            The event that was published.
+        The event is delivered to:
+
+            1. Real-time subscribers
+            2. Existing callback
+
+        The existing callback behaviour is preserved.
         """
 
         # ---------------------------------------------------------------------
@@ -219,7 +322,15 @@ class ProgressPublisher:
         )
 
         # ---------------------------------------------------------------------
-        # Publish through callback
+        # Real-time subscribers
+        # ---------------------------------------------------------------------
+
+        await self._publish_to_subscribers(
+            event
+        )
+
+        # ---------------------------------------------------------------------
+        # Existing callback
         # ---------------------------------------------------------------------
 
         if self.callback is not None:
