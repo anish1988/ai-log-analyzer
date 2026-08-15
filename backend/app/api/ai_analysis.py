@@ -37,8 +37,12 @@ from app.ai.graph.progress import (
 
 from app.schemas.ai_analysis import (
     AIKnowledgeVerificationRequest,
+    JiraTicketCreateRequest,
+    JiraTicketCreateResponse,
 )
-
+from app.integrations.jira.service import (
+    JiraService,
+)
 
 router = APIRouter(
     prefix="/api/ai",
@@ -624,4 +628,157 @@ async def verify_knowledge(
         raise HTTPException(
             status_code=500,
             detail="Failed to verify RAG knowledge.",
+        ) from exc
+
+
+
+# =============================================================================
+# JIRA TICKET
+# =============================================================================
+
+
+@router.post(
+    "/jira/ticket",
+    response_model=JiraTicketCreateResponse,
+)
+async def create_jira_ticket(
+    request: JiraTicketCreateRequest,
+):
+    """
+    Create one Jira ticket for one AI analysis result.
+
+    Important:
+        This endpoint intentionally processes only one error.
+
+        It does NOT accept:
+            - selected_errors
+            - final_results
+            - multiple analysis results
+
+        Therefore one frontend Jira button creates one Jira ticket.
+    """
+
+    analysis = request.analysis
+
+    error_id = (
+        analysis.error_id
+        or ""
+    ).strip()
+
+    if not error_id:
+
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Cannot create Jira ticket: "
+                "error_id is missing."
+            ),
+        )
+
+    try:
+
+        jira_service = JiraService()
+
+        jira_result = (
+            await jira_service.create_ticket(
+                analysis=analysis.model_dump()
+            )
+        )
+
+        issue_key = (
+            jira_result.get(
+                "key",
+                "",
+            )
+            or ""
+        )
+
+        issue_id = (
+            jira_result.get(
+                "id",
+                "",
+            )
+            or ""
+        )
+
+        if not issue_key:
+
+            raise RuntimeError(
+                "Jira created the issue but "
+                "did not return an issue key."
+            )
+
+        # ---------------------------------------------------------------------
+        # Jira browse URL
+        # ---------------------------------------------------------------------
+
+        jira_base_url = (
+            jira_service.client.base_url
+            .rstrip("/")
+        )
+
+        issue_url = (
+            f"{jira_base_url}/browse/"
+            f"{issue_key}"
+        )
+
+        print("=" * 100)
+        print("JIRA TICKET CREATED")
+        print("=" * 100)
+
+        print(
+            f"Error ID   : {error_id}"
+        )
+
+        print(
+            f"Issue Key  : {issue_key}"
+        )
+
+        print(
+            f"Issue ID   : {issue_id}"
+        )
+
+        print(
+            f"Issue URL  : {issue_url}"
+        )
+
+        print("=" * 100)
+
+        return JiraTicketCreateResponse(
+            success=True,
+            error_id=error_id,
+            issue_key=issue_key,
+            issue_id=issue_id,
+            issue_url=issue_url,
+            message=(
+                "Jira ticket created successfully."
+            ),
+        )
+
+    except HTTPException:
+
+        raise
+
+    except Exception as exc:
+
+        print("=" * 100)
+        print("JIRA TICKET CREATION FAILED")
+        print("=" * 100)
+
+        print(
+            f"Error ID : {error_id}"
+        )
+
+        print(
+            repr(exc)
+        )
+
+        print("=" * 100)
+
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "Failed to create Jira ticket: "
+                f"{str(exc)}"
+            ),
         ) from exc

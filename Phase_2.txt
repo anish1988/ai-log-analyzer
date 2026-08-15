@@ -116,10 +116,29 @@ Observation
 4)when we upload same file again and again . it should fetch from RAG or memory rather than calling LLM everytime. if new roor found thne we need to send  to LLM. = Done
 5) In Header we give on eoption to create a ticket on Jira. once user click on button . it should automayically create a ticket and enter all display in jira ticket which i hav ein jira desription section by section.
 
+✅ 1. Jira environment configuration
+✅ 2. JiraClient
+✅ 3. JiraService
+✅ 4. Jira request/response schemas
+✅ 5. POST /api/ai/jira/ticket
+✅ 6. Backend Jira ticket successfully created
 
+👉 7. Inspect existing frontend result/state architecture
+   8. Add Jira API client/helper
+   9. Add Create Jira Ticket button to individual error header
+  10. Loading state per individual error
+  11. Success state: SCRUM-8 + Open Jira
+  12. Error handling per individual error
+  13. Prevent duplicate clicks while creating
+  14. Test 4 errors → create tickets for only selected errors
+  15. Final cleanup + compile/build
+
+  
 6) stepper not move after step 2. it should move on each step = Done
 7) when we change the Log type . it not chnage the default log path . it should e chnage according to selection of log type each time. = Done
 8) need to display if file not found and what ever error in UI
+9) one things is pending in frontend reagrding RAG that is implemented in backend but not in frontend.
+
 
 
 PHASE 3 Requirement

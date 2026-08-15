@@ -285,7 +285,42 @@ class AIKnowledgeVerificationRequest(BaseModel):
 # AI ANALYSIS RESPONSE
 # =============================================================================
 
+# =============================================================================
+# JIRA TICKET
+# =============================================================================
 
+
+class JiraTicketCreateRequest(BaseModel):
+    """
+    Request to create one Jira ticket for one AI analysis result.
+
+    Important:
+        This request intentionally accepts ONE analysis result only.
+
+        One error
+            ->
+        One Jira ticket
+    """
+
+    analysis: AIAnalysisResultResponse
+
+
+class JiraTicketCreateResponse(BaseModel):
+    """
+    Response returned after creating a Jira ticket.
+    """
+
+    success: bool
+
+    error_id: str
+
+    issue_key: str
+
+    issue_id: str
+
+    issue_url: str
+
+    message: str
 class AIAnalysisResponse(BaseModel):
     """
     Final response returned by the AI analysis API.
