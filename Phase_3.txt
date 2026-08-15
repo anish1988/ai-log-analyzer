@@ -1,0 +1,216 @@
+ PHASE 3 Requirement
+
+1) if we configure all web server and mysql server and its IP . system run auatomatically one by one for all server nad each server has own log file .
+
+you can consider we are using load balncer but in our case we know the number of server . 
+2) so sysem fetch the all types of logs from each server / clustr one by one and then it goes to step 2 and analysis the error / preview the error and then send all error 
+to LLM for analyse and llm do same things as we did in step 2 .
+
+3) and save all result in one file with date and time .
+
+4) for all request / response for each step save in file . 
+5) and then create a jira ticket for each and every log . doesn;t matter log will be 10.50.100 
+6) we need to use same function and api for this task . if reqired we create new file for this requirment but try we do not nee dto write same logic again and agin 
+7) also we mark the log where we reads last log.because  in some log we hav eonly one file and every day log sav ein sam efile . onsted of reads all logs wgain ang again . 
+system shoild mark in whcih line system fetcch the log . so when cron runs next time it tooks log from last read not from the starting
+One more chnages in above requiremnt. we donot use any frontend part. means this is a standalone automated process written in python only. if required please craete  anew folder for frontend part menas preview part and process.
+if required we can create a table or use mysql and strore some value nad data if required. 
+but it is standlone on python only. one single file set for cron and it work all .
+
+
+PHASE 3
+│
+├── 3.1 Server / Cluster Configuration
+│
+├── 3.2 Incremental Log Fetching + Checkpoint
+│
+├── 3.3 Automated Processing Orchestrator
+│
+├── 3.4 Reuse Existing Preview + AI Workflow
+│
+├── 3.5 Run / Request / Response Audit Files
+│
+├── 3.6 Automatic Jira Creation
+│
+└── 3.7 Scheduler / Cron + End-to-End Testing               
+                
+                
+                
+                
+                
+                
+                
+                
+                    CRON
+                      │
+                      ▼
+             automation/main.py
+                      │
+              Load servers.yaml
+                      │
+                      ▼
+             Server-by-server
+                      │
+                      ▼
+             Incremental Fetcher
+                      │
+                PostgreSQL
+              ┌───────┴────────┐
+              │                │
+         Checkpoint         Processed
+           offsets           errors
+              │                │
+              └───────┬────────┘
+                      ▼
+                Existing Parser
+                      │
+                      ▼
+                Error Preview
+                      │
+                      ▼
+             Existing LangGraph
+                 AI Workflow
+                      │
+             ┌────────┴────────┐
+             │                 │
+            RAG               LLM
+             │                 │
+             └────────┬────────┘
+                      ▼
+                  AI Result
+                      │
+             ┌────────┼─────────┐
+             │        │         │
+             ▼        ▼         ▼
+          Result    Audit      Jira
+           JSON     JSONL     Service
+             │                  │
+             └────────┬─────────┘
+                      ▼
+                Update Offset
+
+
+ai-log-analyzer/
+│
+├── backend/
+│   │
+│   └── app/
+│       ├── ai/
+│       ├── api/
+│       ├── integrations/
+│       │   └── jira/
+│       └── ...
+│
+├── automation/
+│   │
+│   ├── main.py
+│   │
+│   ├── config/
+│   │   └── servers.yaml
+│   │
+│   ├── fetchers/
+│   │   └── incremental_fetcher.py
+│   │
+│   ├── processors/
+│   │   └── analysis_runner.py
+│   │
+│   ├── checkpoints/
+│   │   └── checkpoint_store.py
+│   │
+│   ├── audit/
+│   │   └── audit_logger.py
+│   │
+│   └── results/
+│
+└── docker-compose.yml
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+automation/
+│
+├── main.py
+│
+├── orchestrator/
+│   └── run_orchestrator.py
+│
+├── server/
+│   └── server_processor.py
+│
+├── logs/
+│   ├── log_source.py
+│   ├── incremental_reader.py
+│   └── log_processor.py
+│
+├── analysis/
+│   └── error_analysis_runner.py
+│
+├── jira/
+│   └── ticket_processor.py
+│
+├── persistence/
+│   ├── run_repository.py
+│   ├── checkpoint_repository.py
+│   ├── error_repository.py
+│   └── audit_repository.py
+│
+├── audit/
+│   └── audit_service.py
+│
+├── results/
+│   └── result_writer.py
+│
+└── config/
+    └── automation_config.py
+
+
+
+                        ┌──────────────────┐
+                    │ CRON             │
+                    │ main.py          │
+                    └────────┬─────────┘
+                             │
+                             ▼
+                 ┌───────────────────────┐
+                 │ AutomationRunService  │
+                 └───────────┬───────────┘
+                             │
+              ┌──────────────┼───────────────┐
+              │              │               │
+              ▼              ▼               ▼
+       ServerProcessor  RunRepository   AuditService
+              │
+              ▼
+       IncrementalReader
+              │
+              ▼
+       Existing Fetchers
+              │
+              ▼
+       Existing Parsers
+              │
+              ▼
+       ErrorAnalysisRunner
+              │
+              ▼
+       Existing LangGraph
+          ┌───┴────┐
+          │        │
+         RAG      LLM
+          │        │
+          └───┬────┘
+              ▼
+       ResultProcessor
+          │       │
+          │       └──────────────┐
+          ▼                      ▼
+    ResultRepository       TicketProcessor
+                                  │
+                                  ▼
+                            JiraService
+                                  │
+                                  ▼
+                              JiraClient
+
+              ┌──────────────────────┐
+              │ CheckpointRepository │
+              └──────────────────────┘
