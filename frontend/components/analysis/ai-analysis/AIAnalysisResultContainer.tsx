@@ -2,6 +2,9 @@
 
 import { useMemo, useState } from "react";
 
+import { Button } from "@/components/ui/button";
+import { ExternalLink } from "lucide-react";
+
 import type {
   AIAnalysisResponse,
 } from "@/lib/types/aiAnalysis";
@@ -10,6 +13,15 @@ import AIAnalysisRagStatus from "./AIAnalysisRagStatus";
 import AIAnalysisRootCauseEvidence from "./AIAnalysisRootCauseEvidence";
 import AIAnalysisSolutionOptimization from "./AIAnalysisSolutionOptimization";
 import AIAnalysisTestResultJira from "./AIAnalysisTestResultJira";
+
+import {
+  createJiraTicket,
+  type JiraTicketCreateResponse,
+} from "@/lib/api/jira";
+
+// =============================================================================
+// TYPES
+// =============================================================================
 
 interface AIAnalysisResultContainerProps {
   response: AIAnalysisResponse;
@@ -21,6 +33,10 @@ type ResultTab =
   | "root-cause"
   | "solution"
   | "validation";
+
+// =============================================================================
+// TABS
+// =============================================================================
 
 const tabs: Array<{
   id: ResultTab;
@@ -54,17 +70,76 @@ const tabs: Array<{
   },
 ];
 
+// =============================================================================
+// COMPONENT
+// =============================================================================
+
 export default function AIAnalysisResultContainer({
   response,
 }: AIAnalysisResultContainerProps) {
   const results =
     response.final_results ?? [];
 
-  const [selectedResultIndex, setSelectedResultIndex] =
-    useState(0);
+  // ===========================================================================
+  // SELECTION STATE
+  // ===========================================================================
 
-  const [activeTab, setActiveTab] =
-    useState<ResultTab>("overview");
+  const [
+    selectedResultIndex,
+    setSelectedResultIndex,
+  ] = useState(0);
+
+  const [
+    activeTab,
+    setActiveTab,
+  ] = useState<ResultTab>("overview");
+
+  // ===========================================================================
+  // JIRA STATE
+  // ===========================================================================
+
+  /**
+   * Error ID currently being used to create a Jira ticket.
+   *
+   * This makes the loading state individual to one error.
+   */
+  const [
+    jiraCreatingErrorId,
+    setJiraCreatingErrorId,
+  ] = useState<string | null>(null);
+
+  /**
+   * Jira tickets created during this analysis session.
+   *
+   * Key:
+   *   error_id
+   *
+   * Value:
+   *   Jira ticket response
+   *
+   * This allows every error to maintain its own Jira state.
+   */
+  const [
+    jiraTickets,
+    setJiraTickets,
+  ] = useState<
+    Record<
+      string,
+      JiraTicketCreateResponse
+    >
+  >({});
+
+  /**
+   * Jira error message.
+   */
+  const [
+    jiraError,
+    setJiraError,
+  ] = useState<string | null>(null);
+
+  // ===========================================================================
+  // SELECTED RESULT
+  // ===========================================================================
 
   const selectedResult =
     results[selectedResultIndex];
@@ -77,11 +152,9 @@ export default function AIAnalysisResultContainer({
       ? selectedResultIndex + 1
       : 0;
 
-  /*
-   * --------------------------------------------------------------------------
-   * Safe result information
-   * --------------------------------------------------------------------------
-   */
+  // ===========================================================================
+  // SAFE RESULT INFORMATION
+  // ===========================================================================
 
   const resultTitle = useMemo(() => {
     if (!selectedResult) {
@@ -98,11 +171,177 @@ export default function AIAnalysisResultContainer({
     selectedResultNumber,
   ]);
 
-  /*
-   * --------------------------------------------------------------------------
-   * Empty state
-   * --------------------------------------------------------------------------
-   */
+  // ===========================================================================
+  // CREATE JIRA TICKET
+  // ===========================================================================
+
+  const handleCreateJiraTicket =
+    async () => {
+      // -----------------------------------------------------------------------
+      // Safety check
+      // -----------------------------------------------------------------------
+
+      if (!selectedResult) {
+        return;
+      }
+
+      // -----------------------------------------------------------------------
+      // Error ID
+      // -----------------------------------------------------------------------
+
+      const errorId =
+        selectedResult.error_id;
+
+      if (!errorId) {
+        setJiraError(
+          "Cannot create Jira ticket because the error ID is missing.",
+        );
+
+        return;
+      }
+
+      // -----------------------------------------------------------------------
+      // Prevent duplicate ticket creation
+      // -----------------------------------------------------------------------
+
+      if (jiraTickets[errorId]) {
+        return;
+      }
+
+      // -----------------------------------------------------------------------
+      // Prevent duplicate clicks
+      // -----------------------------------------------------------------------
+
+      if (
+        jiraCreatingErrorId ===
+        errorId
+      ) {
+        return;
+      }
+
+      // -----------------------------------------------------------------------
+      // Reset previous error
+      // -----------------------------------------------------------------------
+
+      setJiraError(null);
+
+      // -----------------------------------------------------------------------
+      // Set loading state for THIS error only
+      // -----------------------------------------------------------------------
+
+      setJiraCreatingErrorId(
+        errorId,
+      );
+
+      try {
+        console.log(
+          "====================================",
+        );
+
+        console.log(
+          "CREATING JIRA TICKET",
+        );
+
+        console.log(
+          "Error ID:",
+          errorId,
+        );
+
+        console.log(
+          "Analysis:",
+          selectedResult,
+        );
+
+        console.log(
+          "====================================",
+        );
+
+        // ---------------------------------------------------------------------
+        // Create Jira ticket
+        // ---------------------------------------------------------------------
+
+        const result =
+          await createJiraTicket(
+            selectedResult,
+          );
+
+        console.log(
+          "====================================",
+        );
+
+        console.log(
+          "JIRA TICKET CREATED",
+        );
+
+        console.log(
+          "Error ID:",
+          errorId,
+        );
+
+        console.log(
+          "Issue Key:",
+          result.issue_key,
+        );
+
+        console.log(
+          "Issue URL:",
+          result.issue_url,
+        );
+
+        console.log(
+          "====================================",
+        );
+
+        // ---------------------------------------------------------------------
+        // Store Jira result against THIS error
+        // ---------------------------------------------------------------------
+
+        setJiraTickets(
+          (previous) => ({
+            ...previous,
+            [errorId]: result,
+          }),
+        );
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Failed to create Jira ticket.";
+
+        console.error(
+          "====================================",
+        );
+
+        console.error(
+          "JIRA TICKET CREATION FAILED",
+        );
+
+        console.error(
+          "Error ID:",
+          errorId,
+        );
+
+        console.error(
+          error,
+        );
+
+        console.error(
+          "====================================",
+        );
+
+        setJiraError(
+          message,
+        );
+      } finally {
+        setJiraCreatingErrorId(
+          null,
+        );
+      }
+    };
+
+  // ===========================================================================
+  // EMPTY STATE
+  // ===========================================================================
 
   if (!results.length) {
     return (
@@ -126,6 +365,10 @@ export default function AIAnalysisResultContainer({
       </section>
     );
   }
+
+  // ===========================================================================
+  // MAIN UI
+  // ===========================================================================
 
   return (
     <section className="space-y-6">
@@ -269,18 +512,13 @@ export default function AIAnalysisResultContainer({
                           index,
                         );
 
-                        /*
-                         * Return to Overview when
-                         * switching between errors.
-                         *
-                         * This keeps navigation
-                         * predictable and prevents
-                         * a previously selected tab
-                         * from confusing the user.
-                         */
                         setActiveTab(
                           "overview",
                         );
+
+                        // Clear only the previous
+                        // global error message.
+                        setJiraError(null);
                       }}
                       className={`mb-1 w-full rounded-xl p-3 text-left transition ${
                         isSelected
@@ -378,7 +616,7 @@ export default function AIAnalysisResultContainer({
 
                 <div className="flex flex-wrap items-start justify-between gap-4">
 
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
 
                     <div className="flex flex-wrap items-center gap-2">
 
@@ -400,16 +638,106 @@ export default function AIAnalysisResultContainer({
 
                     </div>
 
-                    <h2 className="mt-3 text-lg font-semibold leading-7 text-slate-800">
-                      {resultTitle}
-                    </h2>
+                    {/* ------------------------------------------------------ */}
+                    {/* ERROR TITLE + JIRA BUTTON                             */}
+                    {/* ------------------------------------------------------ */}
 
-                    <p className="mt-1 text-xs text-slate-400">
-                      Error {selectedResultNumber} of{" "}
-                      {selectedErrorCount}
-                    </p>
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+
+                      <div className="min-w-0">
+
+                        <h2 className="text-lg font-semibold leading-7 text-slate-800">
+                          {resultTitle}
+                        </h2>
+
+                        <p className="mt-1 text-xs text-slate-400">
+                          Error {selectedResultNumber} of{" "}
+                          {selectedErrorCount}
+                        </p>
+
+                      </div>
+
+                      {/* ---------------------------------------------------- */}
+                      {/* INDIVIDUAL JIRA ACTION                              */}
+                      {/* ---------------------------------------------------- */}
+
+                      <div className="flex shrink-0 items-center gap-2">
+
+                        {(() => {
+                          const errorId =
+                            selectedResult.error_id;
+
+                          const jiraTicket =
+                            errorId
+                              ? jiraTickets[
+                                  errorId
+                                ]
+                              : undefined;
+
+                          const isCreating =
+                            errorId ===
+                            jiraCreatingErrorId;
+
+                          if (
+                            jiraTicket
+                          ) {
+                            return (
+                              <>
+                                <span className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">
+                                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+
+                                  {jiraTicket.issue_key}
+                                </span>
+
+                                <a
+                                  href={
+                                    jiraTicket.issue_url
+                                  }
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                                >
+                                  Open Jira
+
+                                  <ExternalLink
+                                    size={14}
+                                  />
+                                </a>
+                              </>
+                            );
+                          }
+
+                          return (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={
+                                isCreating
+                              }
+                              onClick={
+                                handleCreateJiraTicket
+                              }
+                              className="gap-2"
+                            >
+                              <ExternalLink
+                                size={16}
+                              />
+
+                              {isCreating
+                                ? "Creating..."
+                                : "Create Jira Ticket"}
+                            </Button>
+                          );
+                        })()}
+
+                      </div>
+
+                    </div>
 
                   </div>
+
+                  {/* Analysis Status */}
 
                   <span
                     className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
@@ -432,6 +760,22 @@ export default function AIAnalysisResultContainer({
                 </div>
 
               </div>
+
+              {/* ============================================================ */}
+              {/* JIRA ERROR                                                    */}
+              {/* ============================================================ */}
+
+              {jiraError && (
+                <div className="border-b border-red-100 bg-red-50 px-6 py-3 text-sm text-red-700">
+
+                  <span className="font-semibold">
+                    Jira ticket creation failed:
+                  </span>{" "}
+
+                  {jiraError}
+
+                </div>
+              )}
 
               {/* ============================================================ */}
               {/* TABS                                                          */}
@@ -470,6 +814,7 @@ export default function AIAnalysisResultContainer({
                               : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
                           }`}
                         >
+
                           <span className="hidden sm:inline">
                             {tab.label}
                           </span>
