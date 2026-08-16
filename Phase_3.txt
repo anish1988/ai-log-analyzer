@@ -214,3 +214,19 @@ automation/
               ┌──────────────────────┐
               │ CheckpointRepository │
               └──────────────────────┘
+
+
+
+Phase 3.3 completed.
+
+- Added checkpoint-aware incremental log reading
+- Reused existing SSH/local log infrastructure
+- Added byte-offset tracking
+- Added line-number tracking
+- Added inode/file-size rotation detection
+- Added truncation detection
+- Prevented consumption of incomplete final log lines
+- Kept checkpoint persistence outside the reader
+- Checkpoint is intended to be committed only after downstream processing succeeds
+
+Phase 3.2 persistence remains unchanged.              
