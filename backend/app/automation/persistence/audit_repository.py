@@ -94,33 +94,3 @@ class AutomationAuditRepository:
 
             await connection.close()
 
-
-await audit_repository.record(
-    AutomationAuditEvent(
-        run_id=run_id,
-        server_id=result.server_id,
-        log_type=result.log_type,
-        step="log_fetch",
-        status="completed",
-        message="Incremental log fetch completed.",
-        request={
-            "file": result.file_path,
-            "previous_line": result.previous_line,
-            "previous_offset": result.previous_offset,
-        },
-        response={
-            "start_line": result.start_line,
-            "end_line": result.end_line,
-            "start_offset": result.start_offset,
-            "end_offset": result.end_offset,
-            "lines_read": result.lines_read,
-            "has_new_data": result.has_new_data,
-            "rotated": result.rotated,
-            "truncated": result.truncated,
-        },
-        metadata={
-            "phase": "3.3",
-            "reader": "IncrementalLogReader",
-        },
-    )
-)        
