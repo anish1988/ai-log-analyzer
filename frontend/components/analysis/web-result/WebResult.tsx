@@ -483,6 +483,13 @@ export default function WebResult({
                 console.log(
                   "====================================",
                 );
+                setAiAnalysisResponse(
+                  response,
+                );
+
+                setAiAnalysisError(
+                  null,
+                );
               }}
 
               onClosed={(response) => {

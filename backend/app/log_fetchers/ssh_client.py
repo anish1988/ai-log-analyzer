@@ -18,6 +18,9 @@ import asyncssh
 from app.config.servers import ServerConfig
 from app.log_fetchers.path_resolver import ResolvedLogPath
 import logging
+from app.log_fetchers.log_paths import (
+    REMOTE_LOG_PATHS,
+)
 
 logger = logging.getLogger(__name__)
 _connection_pool: dict[str, asyncssh.SSHClientConnection] = {}
@@ -131,30 +134,7 @@ async def search_remote_file(
 
    
 
-    REMOTE_LOG_PATHS = {
-        "apache": [
-            "/var/log/httpd",
-            "/var/log/apache2",
-            "/usr/local/apache/logs",
-        ],
-        "mysql": [
-            "/var/log/mysql",
-            "/var/log",
-        ],
-        "syslog": [
-            "/var/log",
-        ],
-        "asterisk-core": [
-            "/var/log/asterisk",
-        ],
-        "asterisk-full": [
-            "/var/log/asterisk",
-        ],
-        "astguiclient": [
-            "/var/log/astguiclient",
-        ],
-    }
-    
+   
     candidate_paths = []
 
     for directory in REMOTE_LOG_PATHS.get(candidate.service, []):

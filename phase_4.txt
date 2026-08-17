@@ -1,0 +1,125 @@
+PHASE 4 Requirement
+
+
+1) We need to implement Login Module.
+2) login with SSO, GMAIL,AND signIN option.
+3) Once user can login user can see th eown serch data and history.
+4) User can save the search parameter 
+5) when user click on AI anlayzer button ask to user you want to custom prompt yes or no . if no thne go with defult prompt. 
+if use rclick on YEs then display the defult prompt  to user who we are using for analyze and below give one text area for ad dthe user prompt 
+6) and then system add the usr prompt as well to defult prompt and then send to LLM.
+7)when we display the user history in table formate then we give the  btton fo rmore detailes.
+8) when user click on more detaile sthne we nee dto diplay all error which in execute in that time or records . 
+
+but make sure no any harm and affect on auatomation part .. .. In automation part no user prompt required and all that.. 
+but we can display cron log history to superadmin or admin . but that will implement in after this phase .
+so make sure automation part will always run without any error .
+
+
+In next pahse we implemnt the email notification if cron failes or execution stop in the middle . 
+any moment if error is found w eneed to send mail to admin with error deatiles. and also create a  jira ticket fo rthis .
+
+
+
+PHASE 3
+✅ Standalone Automation
+✅ Incremental logs
+✅ LangGraph
+✅ Jira
+✅ Checkpoints
+
+PHASE 4
+→ User foundation
+→ Search history
+→ Saved searches
+→ Custom prompts
+→ Analysis history
+→ Error details
+→ Portal Jira actions
+→ Dashboard/export/etc.
+→ Login/SSO/Google LAST
+
+PHASE 5
+→ Automation failure detection
+→ Immediate admin email
+→ Automatic Jira failure ticket
+→ Failure audit
+→ Retry/recovery
+→ Admin/SuperAdmin automation history
+
+
+
+PHASE 4
+│
+├── 4.1 Authentication & Login
+│   ├── Google
+│   ├── Enterprise SSO
+│   └── Local Sign-In
+│
+├── 4.2 User & RBAC
+│
+├── 4.3 User-Owned Search & History
+│
+├── 4.4 Saved Searches
+│
+├── 4.5 Custom AI Prompt
+│
+├── 4.6 Analysis History
+│
+├── 4.7 Run Details & Error Details
+│
+├── 4.8 Jira Portal Integration
+│
+├── 4.9 Audit Trail
+│
+├── 4.10 Notifications
+│
+├── 4.11 Dashboard
+│
+├── 4.12 Search / Pagination / Export
+│
+└── 4.13 Security / Performance / E2E Testing
+
+
+
+
+PHASE 4
+│
+├── 4.1 User foundation
+│   ├── users table
+│   ├── default users
+│   ├── user_id conventions
+│   └── current-user development context
+│
+├── 4.2 Search history
+│   └── always store user_id
+│
+├── 4.3 Saved searches
+│   └── user-specific
+│
+├── 4.4 Analysis Run persistence
+│   └── user_id
+│
+├── 4.5 Custom AI Prompt
+│   ├── default prompt
+│   ├── user prompt
+│   └── prompt history
+│
+├── 4.6 Analysis History UI
+│
+├── 4.7 Run Details / Error Details
+│
+├── 4.8 Jira Portal Actions
+│
+├── 4.9 Audit Trail
+│
+├── 4.10 Dashboard / Filters / Pagination / Export
+│
+├── 4.11 Product usability improvements
+│
+├── 4.12 Security hardening
+│
+└── 4.13 Authentication
+     ├── Local Login
+     ├── Google
+     └── Enterprise SSO

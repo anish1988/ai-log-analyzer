@@ -1,0 +1,26 @@
+{
+  "run_id": "PHASE-3.6-INTEGRATION-TEST-001",
+  "created_at": "2026-08-16T02:37:45.271139+00:00",
+  "error_id": "ERR-P3.6-003",
+  "server": "web-02",
+  "log_type": "apache_error",
+  "analysis": {
+    "error_id": "ERR-P3.6-003",
+    "server": "web-02",
+    "log_type": "apache_error",
+    "title": "Apache error three",
+    "severity": "WARNING",
+    "root_cause": "Test root cause 3",
+    "solution": "Test solution 3",
+    "jira_description": "Test Jira description 3",
+    "status": "completed"
+  },
+  "jira": {
+    "auto_create_enabled": true,
+    "created": true,
+    "issue_key": "SCRUM-TEST-ERR-P3.6-003",
+    "issue_id": "TEST-ID",
+    "issue_url": "https://jira.example/ERR-P3.6-003",
+    "error": null
+  }
+}
