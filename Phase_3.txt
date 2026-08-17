@@ -244,3 +244,7 @@ Phase 3.4 completed.
 - Verified final result generation
 - Verified LLM knowledge storage in RAG
 - No duplicate RAG or LLM implementation added
+
+
+
+If you want, I can give you the exact minimal change for db-slow-query and the verification commands first, rather than creating any unnecessary new file.

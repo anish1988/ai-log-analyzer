@@ -10,30 +10,12 @@ from pathlib import Path
 from app.config.servers import ServerConfig
 from app.log_fetchers.path_resolver import ResolvedLogPath
 
+from app.log_fetchers.log_paths import (
+    LOCAL_LOG_PATHS,
+)
 
-LOCAL_LOG_PATHS = {
-    "apache": [
-        "/var/log/httpd",
-        "/var/log/apache2",
-        "/usr/local/apache/logs",
-    ],
-    "mysql": [
-        "/var/log/mysql",
-        "/var/log",
-    ],
-    "syslog": [
-        "/var/log",
-    ],
-    "asterisk-core": [
-        "/var/log/asterisk",
-    ],
-    "asterisk-full": [
-        "/var/log/asterisk",
-    ],
-    "vicidial": [
-        "/var/log/astguiclient",
-    ],
-}
+
+
 
 
 def _escape_for_regex(value: str) -> str:
