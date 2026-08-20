@@ -6,7 +6,7 @@ Stores one complete AI/Jira response per error.
 Directory structure:
 
     /app/automation/responses/
-        YYYY-MM-DD/
+        YYYYMMDDHHMMSS/
             <error_id>__<run_id>.json
 
 The run_id is included in the filename so that a retry never
@@ -61,12 +61,32 @@ class AutomationResultWriter:
             timezone.utc
         )
 
-        date_directory = (
-            self.base_directory
-            / now.strftime("%Y-%m-%d")
+        cluster_name = self._safe_filename(
+            str(
+                analysis.get(
+                    "server",
+                    "unknown-cluster",
+                )
+            )
         )
 
-        date_directory.mkdir(
+        log_type = self._safe_filename(
+            str(
+                analysis.get(
+                    "log_type",
+                    "unknown-log",
+                )
+            )
+        )
+
+        run_directory = (
+            self.base_directory
+            / now.strftime("%Y%m%d%H%M%S")
+            / cluster_name
+            / log_type
+        )
+
+        run_directory.mkdir(
             parents=True,
             exist_ok=True,
         )
@@ -89,7 +109,7 @@ class AutomationResultWriter:
         )
 
         output_path = (
-            date_directory
+            run_directory
             / file_name
         )
 

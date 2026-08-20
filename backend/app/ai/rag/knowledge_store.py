@@ -108,7 +108,18 @@ class KnowledgeStore:
 
         metadata = {
             "source": "ai_analysis",
-            "embedding_model": "text-embedding-3-small",
+            "embedding_provider": os.getenv(
+                "AI_PROVIDER",
+                "openai",
+            ),
+            "embedding_model": os.getenv(
+                "GEMINI_EMBEDDING_MODEL"
+                if os.getenv("AI_PROVIDER") == "gemini"
+                else "OPENAI_EMBEDDING_MODEL",
+                "gemini-embedding-001"
+                if os.getenv("AI_PROVIDER") == "gemini"
+                else "text-embedding-3-small",
+            ),
         }
 
         print("=" * 100)
@@ -123,13 +134,9 @@ class KnowledgeStore:
             f"File            : {error.get('file_name', '')}"
         )
 
-        print(
-            f"Error ID        : {error.get('error_id', '')}"
-        )
+        print( f"Error ID        : {error.get('error_id', '')}" )
 
-        print(
-            f"Embedding Size  : {len(embedding)}"
-        )
+        print( f"Embedding Size  : {len(embedding)}" )
 
         connection = await self._connect()
 

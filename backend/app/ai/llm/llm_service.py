@@ -13,6 +13,7 @@ import os
 from typing import TypeVar
 
 from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from pydantic import BaseModel
 
 
@@ -31,32 +32,83 @@ class LLMService:
         temperature: float = 0.0,
     ) -> None:
 
-        self.model = (
-            model
-            or os.getenv(
-                "OPENAI_MODEL",
-                "gpt-5.4",
+        self.provider = os.getenv(
+            "AI_PROVIDER",
+            "openai",
+        ).lower()
+
+        if self.provider == "gemini":
+
+            self.model = (
+                model
+                or os.getenv(
+                    "GEMINI_MODEL",
+                    "gemini-3.6-flash",
+                )
             )
-        )
+
+            api_key = os.getenv(
+                "GEMINI_API_KEY"
+            )
+
+            if not api_key:
+                raise RuntimeError(
+                    "GEMINI_API_KEY is not configured."
+                )
+
+            self.llm = ChatGoogleGenerativeAI(
+                model=self.model,
+                google_api_key=api_key,
+                temperature=temperature,
+            )
+
+        elif self.provider == "openai":
+
+            self.model = (
+                model
+                or os.getenv(
+                    "OPENAI_MODEL",
+                    "gpt-5-mini",
+                )
+            )
+
+            api_key = os.getenv(
+                "OPENAI_API_KEY"
+            )
+
+            if not api_key:
+                raise RuntimeError(
+                    "OPENAI_API_KEY is not configured."
+                )
+
+            self.llm = ChatOpenAI(
+                model=self.model,
+                api_key=api_key,
+                temperature=temperature,
+            )
+
+        else:
+
+            raise ValueError(
+                f"Unsupported AI_PROVIDER: "
+                f"{self.provider}"
+            )
 
         self.temperature = temperature
 
         print("=" * 100)
         print("LLM SERVICE INITIALIZATION")
         print("=" * 100)
-
         print(
-            f"LLM Model  : {self.model}"
+            f"LLM Provider: {self.provider}"
         )
-
         print(
-            f"Temperature: {temperature}"
+            f"LLM Model   : {self.model}"
         )
-
-        self.llm = ChatOpenAI(
-            model=self.model,
-            temperature=temperature,
+        print(
+            f"Temperature : {temperature}"
         )
+        print("=" * 100)
 
     async def analyze(
         self,

@@ -35,7 +35,7 @@ services:
       # Mount the host filesystem read-only
       - /:/host_fs:ro
      # - ./local-test-logs:/var/log
-     # - C:/Users/anish.rai/Downloads/id_rsa:/secrets/id_rsa:ro
+      - C:/Users/anish.rai/Downloads/id_rsa:/secrets/id_rsa:ro
       # Apache Logs
     #  - /var/log/apache2:/host_logs/apache2:ro
       - /var/log/apache2:/var/log/apache2:ro
@@ -70,6 +70,14 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: ai_log_analyzer
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_MODEL: ${OPENAI_MODEL}
+
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_MODEL: ${GEMINI_MODEL}
+      GEMINI_EMBEDDING_MODEL: ${GEMINI_EMBEDDING_MODEL}
+
+      AI_PROVIDER: ${AI_PROVIDER}
 
     ports:
       - "5433:5432"
