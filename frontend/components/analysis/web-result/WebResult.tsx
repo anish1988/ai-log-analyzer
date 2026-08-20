@@ -468,28 +468,22 @@ export default function WebResult({
               }}
 
               onCompleted={(response) => {
-                console.log(
-                  "====================================",
-                );
+                console.log( "====================================",  );
 
-                console.log(
-                  "AI ANALYSIS BACKEND COMPLETED",
-                );
+                console.log( "AI ANALYSIS BACKEND COMPLETED",  );
 
-                console.log(
-                  response,
-                );
+                console.log(  response, );
 
                 console.log(
                   "====================================",
                 );
-                setAiAnalysisResponse(
-                  response,
-                );
+            //    setAiAnalysisResponse(
+              //    response,
+                //);
 
-                setAiAnalysisError(
-                  null,
-                );
+                //setAiAnalysisError(
+                  //null,
+                //);
               }}
 
               onClosed={(response) => {

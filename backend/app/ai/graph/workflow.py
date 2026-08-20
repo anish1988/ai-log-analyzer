@@ -48,6 +48,10 @@ from app.ai.graph.nodes.llm_analysis import (
     run_llm_analysis,
 )
 
+from app.config.ai_config import (
+    is_rag_enabled,
+)
+
 from app.ai.rag.decision_engine import (
     RAGDecision,
     RAGDecisionEngine,
@@ -761,6 +765,28 @@ async def decide_rag(
     }
 
 
+
+
+def route_after_rag_or_skip(
+    state: AIAnalysisState,
+) -> str:
+    """
+    Route to the existing RAG flow when enabled.
+
+    When RAG is disabled, skip embedding/retrieval/decision
+    and go directly to the existing LLM analysis node.
+    """
+
+    if not is_rag_enabled():
+        print("=" * 100)
+        print("RAG DISABLED")
+        print("Skipping embedding + retrieval + RAG decision.")
+        print("Routing directly to LLM analysis.")
+        print("=" * 100)
+
+        return "llm_required"
+
+    return "run_rag"
 # =============================================================================
 # ROUTER
 # =============================================================================
@@ -1422,9 +1448,36 @@ def route_after_result(
     return "finalize"
 
 
+
+
 # =============================================================================
 # BUILD GRAPH
 # =============================================================================
+
+
+def route_after_llm(
+    state: AIAnalysisState,
+) -> str:
+    """
+    After LLM analysis:
+
+    RAG enabled:
+        store the completed knowledge using the generated embedding.
+
+    RAG disabled:
+        skip knowledge storage because no embedding exists.
+    """
+
+    if not is_rag_enabled():
+        print("=" * 100)
+        print("RAG DISABLED")
+        print("Skipping RAG knowledge storage.")
+        print("Moving to next error.")
+        print("=" * 100)
+
+        return "continue_without_rag"
+
+    return "store_knowledge"
 
 
 def build_ai_analysis_graph():
@@ -1532,9 +1585,19 @@ def build_ai_analysis_graph():
         "prepare_rag_query",
     )
 
-    graph.add_edge(
+    # Original direct edge replaced by conditional RAG routing.
+    # graph.add_edge(
+    #     "prepare_rag_query",
+    #     "generate_rag_embedding",
+    # )
+
+    graph.add_conditional_edges(
         "prepare_rag_query",
-        "generate_rag_embedding",
+        route_after_rag_or_skip,
+        {
+            "run_rag": "generate_rag_embedding",
+            "llm_required": "llm_analysis",
+        },
     )
 
     graph.add_edge(
@@ -1587,24 +1650,33 @@ def build_ai_analysis_graph():
     # LLM ANALYSIS → NEXT ERROR / FINALIZE
     # =========================================================================
 
-    graph.add_edge(
-            "llm_analysis",
-            "store_llm_knowledge",
-        )
+  #  graph.add_edge(
+   #         "llm_analysis",
+    #        "store_llm_knowledge",
+     #   )
+    
+    graph.add_conditional_edges(
+        "llm_analysis",
+        route_after_llm,
+        {
+            "store_knowledge": "store_llm_knowledge",
+            "continue_without_rag": "move_to_next_error",
+        },
+    )
 
     graph.add_conditional_edges(
-            "store_llm_knowledge",
-            route_after_result,
-            {
-                "next_error": (
-                    "move_to_next_error"
-                ),
+        "store_llm_knowledge",
+        route_after_result,
+        {
+            "next_error": (
+                "move_to_next_error"
+            ),
 
-                "finalize": (
-                    "finalize_analysis"
-                ),
-            },
-        )
+            "finalize": (
+                "finalize_analysis"
+            ),
+        },
+    )
 
     # =========================================================================
     # LOOP
