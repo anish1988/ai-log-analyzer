@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 
 import type {
-  AIAnalysisResultResponse,
+  AIAnalysisResult,
 } from "@/lib/types/aiAnalysis";
 
 // =============================================================================
@@ -11,7 +11,7 @@ import type {
 // =============================================================================
 
 interface AIAnalysisTestResultJiraProps {
-  result: AIAnalysisResultResponse;
+  result: AIAnalysisResult;
 }
 
 interface TestResult {

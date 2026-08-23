@@ -1,7 +1,7 @@
 "use client";
 
 import type {
-  AIAnalysisResultResponse,
+  AIAnalysisResult,
 } from "@/lib/types/aiAnalysis";
 
 // =============================================================================
@@ -9,7 +9,7 @@ import type {
 // =============================================================================
 
 interface AIAnalysisRootCauseEvidenceProps {
-  result: AIAnalysisResultResponse;
+  result: AIAnalysisResult;
 }
 
 // =============================================================================

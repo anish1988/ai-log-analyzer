@@ -1,19 +1,13 @@
 // frontend/app/new-analysis/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
-
-import { useSearchParams } from "next/navigation";
+import { useState } from "react";
 
 import {
   SearchFiltersProvider,
 } from "@/providers/SearchFiltersProvider";
 
 import SearchFilterCard from "@/components/analysis/search-filter-card/SearchFilterCard";
-
-import {
-  useSavedSearches,
-} from "@/hooks/useSavedSearches";
 
 import type {
   LogFetchResponse,
@@ -29,137 +23,6 @@ import ResultRenderer from "@/components/analysis/result-renderer/ResultRenderer
 import AIAnalysisResultContainer from "@/components/analysis/ai-analysis/AIAnalysisResultContainer";
 
 import Stepper from "@/components/stepper/Stepper";
-
-
-function SavedSearchLoader() {
-
-  const searchParams = useSearchParams();
-
-  const savedSearchIdParam =
-    searchParams.get("savedSearchId");
-
-  const {
-    loadSavedSearch,
-    isLoadingOne,
-  } = useSavedSearches();
-
-  const [
-    loadError,
-    setLoadError,
-  ] = useState<string | null>(null);
-
-  const savedSearchId =
-  savedSearchIdParam
-    ? Number(savedSearchIdParam)
-    : null;
-
-const isInvalidSavedSearchId =
-  savedSearchIdParam !== null &&
-  (
-    !Number.isInteger(savedSearchId) ||
-    savedSearchId <= 0
-  );
-
-useEffect(() => {
-  if (
-    !savedSearchIdParam ||
-    isInvalidSavedSearchId
-  ) {
-    return;
-  }
-
-  let cancelled = false;
-
-  const load = async () => {
-    setLoadError(null);
-
-    const savedSearch =
-      await loadSavedSearch(
-        savedSearchId as number,
-      );
-
-    if (
-      !savedSearch &&
-      !cancelled
-    ) {
-      setLoadError(
-        "Saved search could not be loaded.",
-      );
-    }
-  };
-
-  void load();
-
-  return () => {
-    cancelled = true;
-  };
-}, [
-  savedSearchIdParam,
-  isInvalidSavedSearchId,
-  savedSearchId,
-  loadSavedSearch,
-]);
-
-  if (
-    !savedSearchIdParam
-  ) {
-    return null;
-  }
-
-  if (isLoadingOne) {
-
-    return (
-      <div className="mb-6 rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3">
-
-        <div className="flex items-center gap-2 text-sm text-indigo-700">
-
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-indigo-300 border-t-indigo-600" />
-
-          Loading saved search...
-
-        </div>
-
-      </div>
-    );
-  }
-
-  if (isInvalidSavedSearchId) {
-  return (
-    <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
-      <p className="text-sm text-red-700">
-        Invalid saved search ID.
-      </p>
-    </div>
-  );
-}
-
-  if (loadError) {
-
-    return (
-      <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
-
-        <p className="text-sm text-red-700">
-          {loadError}
-        </p>
-
-      </div>
-    );
-  }
-
-  return (
-    <div className="mb-6 rounded-xl border border-green-200 bg-green-50 px-4 py-3">
-
-      <p className="text-sm font-medium text-green-700">
-        Saved search loaded successfully.
-      </p>
-
-      <p className="mt-1 text-xs text-green-600">
-        The search filters have been populated from the saved search.
-      </p>
-
-    </div>
-  );
-}
 
 // =============================================================================
 // PAGE
@@ -306,7 +169,6 @@ export default function NewAnalysisPage() {
     <SearchFiltersProvider>
 
       <div className="mx-auto max-w-7xl px-6 py-8">
-    <SavedSearchLoader />    
 
         {/* ================================================================== */}
         {/* STEPPER                                                            */}

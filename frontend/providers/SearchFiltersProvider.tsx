@@ -61,9 +61,24 @@ function reducer(state: SearchFiltersState, action: Action): SearchFiltersState 
 
 export interface SearchFiltersContextValue {
   filters: SearchFiltersState;
-  setField: <K extends keyof SearchFiltersState>(key: K, value: SearchFiltersState[K]) => void;
-  setTier: (tier: SearchFiltersState["tier"]) => void;
+
+  setField: <
+    K extends keyof SearchFiltersState
+  >(
+    key: K,
+    value: SearchFiltersState[K],
+  ) => void;
+
+  setTier: (
+    tier: SearchFiltersState["tier"],
+  ) => void;
+
+  hydrate: (
+    state: SearchFiltersState,
+  ) => void;
+
   reset: () => void;
+
   isValid: boolean;
 }
 
@@ -94,9 +109,27 @@ export function SearchFiltersProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  const setTier = useCallback((tier: SearchFiltersState["tier"]) => {
-    dispatch({ type: "SET_TIER", tier });
-  }, []);
+const setTier = useCallback(
+  (
+    tier: SearchFiltersState["tier"],
+  ) => {
+    dispatch({
+      type: "SET_TIER",
+      tier,
+    });
+  },
+  [],
+);
+
+const hydrate = useCallback(
+  (state: SearchFiltersState) => {
+    dispatch({
+      type: "HYDRATE",
+      state,
+    });
+  },
+  [],
+);
 
   const reset = useCallback(() => {
     sessionStorage.removeItem(STORAGE_KEY);
@@ -129,8 +162,8 @@ export function SearchFiltersProvider({ children }: { children: ReactNode }) {
   console.log("Provider Filters:", filters);
   console.table(filters);
   const value = useMemo(
-    () => ({ filters, setField, setTier, reset, isValid }),
-    [filters, setField, setTier, reset, isValid]
+    () => ({ filters, setField, setTier, hydrate, reset, isValid }),
+    [filters, setField, setTier, hydrate, reset, isValid]
   );
 
   return (
