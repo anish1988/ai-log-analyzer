@@ -1,7 +1,8 @@
 "use client";
 
 import type {
-  AIAnalysisResultResponse,
+//  AIAnalysisResultResponse,
+  AIAnalysisResult
 } from "@/lib/types/aiAnalysis";
 
 // =============================================================================
@@ -9,7 +10,7 @@ import type {
 // =============================================================================
 
 interface AIAnalysisRagStatusProps {
-  result: AIAnalysisResultResponse;
+  result: AIAnalysisResult;
 }
 
 // =============================================================================

@@ -1,63 +1,65 @@
 "use client";
 
-import type { ReactNode } from "react";
-
-import type {
-  AIAnalysisResult,
-} from "@/lib/types/aiAnalysis";
-
-import AIAnalysisState from "./AIAnalysisState";
-
-interface AIAnalysisResultStateProps {
-  result: AIAnalysisResult | null;
-
-  loading?: boolean;
-
-  error?: string | null;
-
+interface AIAnalysisStateProps {
+  type: "loading" | "error" | "empty";
+  message?: string;
   onRetry?: () => void;
-
   onBack?: () => void;
-
-  children: ReactNode;
 }
 
-export default function AIAnalysisResultState({
-  result,
-  loading = false,
-  error = null,
+export default function AIAnalysisState({
+  type,
+  message,
   onRetry,
   onBack,
-  children,
-}: AIAnalysisResultStateProps) {
-  if (loading) {
-    return (
-      <AIAnalysisState
-        type="loading"
-        onBack={onBack}
-      />
-    );
-  }
+}: AIAnalysisStateProps) {
+  const title =
+    type === "loading"
+      ? "AI Analysis in Progress"
+      : type === "error"
+        ? "AI Analysis Failed"
+        : "No Analysis Result";
 
-  if (error) {
-    return (
-      <AIAnalysisState
-        type="error"
-        message={error}
-        onRetry={onRetry}
-        onBack={onBack}
-      />
-    );
-  }
+  const description =
+    type === "loading"
+      ? "Please wait while the selected errors are being analyzed."
+      : type === "error"
+        ? message || "The AI analysis could not be completed."
+        : "No AI analysis result is available.";
 
-  if (!result) {
-    return (
-      <AIAnalysisState
-        type="empty"
-        onBack={onBack}
-      />
-    );
-  }
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="text-center">
+        <h2 className="text-lg font-semibold text-slate-900">
+          {title}
+        </h2>
 
-  return <>{children}</>;
+        <p className="mt-2 text-sm text-slate-500">
+          {description}
+        </p>
+
+        <div className="mt-6 flex justify-center gap-3">
+          {type === "error" && onRetry && (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white"
+            >
+              Retry
+            </button>
+          )}
+
+          {onBack && (
+            <button
+              type="button"
+              onClick={onBack}
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700"
+            >
+              Back
+            </button>
+          )}
+        </div>
+      </div>
+    </section>
+  );
 }
