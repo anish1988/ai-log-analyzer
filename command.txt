@@ -47,3 +47,10 @@ Send a real AI request using the same request ID:
 
 curl -i -X POST http://localhost:8000/api/ai/analyze -H "Content-Type: application/json" -d "{\"request_id\":\"TEST-3.15.4-SSE\",\"selected_errors\":[{\"error_id\":\"TEST-3.15.4-SSE-001\",\"tier\":\"web\",\"log_type\":\"apache_error\",\"server\":\"web-01\",\"file_name\":\"error.log\",\"file_path\":\"/var/log/apache2/error.log\",\"title\":\"Apache SSL certificate warning\",\"severity\":\"warning\",\"timestamp\":\"\",\"start_line\":1,\"end_line\":1,\"total_lines\":1,\"error_content\":\"AH01906: server certificate is a CA certificate\",\"lines\":[{\"line_number\":1,\"raw\":\"AH01906: server certificate is a CA certificate\"}]}]}"
 Terminal 1 should now start receiving events
+
+
+command fo rrun teh migration 
+
+docker exec -i ai-log-analyzer-postgres \
+psql -U postgres -d ai_log_analyzer \
+< backend/app/db/migrations/004_create_search_history.sql

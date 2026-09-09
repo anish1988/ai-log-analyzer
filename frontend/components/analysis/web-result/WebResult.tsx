@@ -157,6 +157,11 @@ export default function WebResult({
     );
   };
 
+  const [
+    customPrompt,
+    setCustomPrompt,
+  ] = useState("");
+
   // ===========================================================================
   // CLEAR SELECTION
   // ===========================================================================
@@ -364,11 +369,10 @@ export default function WebResult({
           AI ANALYSIS ACTION
       ====================================================================== */}
 
+
       <div
         className="
-          flex
-          items-center
-          justify-between
+          space-y-5
           rounded-xl
           border
           border-slate-200
@@ -377,77 +381,131 @@ export default function WebResult({
           shadow-sm
         "
       >
-
         {/* -------------------------------------------------------------------
-            BACK
+            CUSTOM PROMPT
         -------------------------------------------------------------------- */}
 
-        <button
-          type="button"
-          onClick={onBack}
-          className="
-            rounded-lg
-            border
-            border-slate-300
-            px-5
-            py-2.5
-            text-sm
-            font-medium
-            text-slate-700
-            transition
-            hover:bg-slate-100
-          "
-        >
-          ← Back
-        </button>
+        <div className="space-y-2">
+          <label
+            htmlFor="custom-ai-prompt"
+            className="block text-sm font-medium text-slate-700"
+          >
+            Additional instructions for AI analysis
+            <span className="ml-1 font-normal text-slate-500">
+              (optional)
+            </span>
+          </label>
 
-        {/* -------------------------------------------------------------------
-            SELECTION + AI ACTION
-        -------------------------------------------------------------------- */}
-
-        <div className="flex items-center gap-4">
-
-          <span
+          <textarea
+            id="custom-ai-prompt"
+            name="custom-ai-prompt"
+            value={customPrompt}
+            onChange={(event) =>
+              setCustomPrompt(event.target.value)
+            }
+            maxLength={5000}
+            rows={4}
+            placeholder="Example: Focus on identifying the root cause and explain which log evidence supports your conclusion."
+            aria-label="Additional instructions for AI analysis"
             className="
+              w-full
+              resize-y
+              rounded-lg
+              border
+              border-slate-300
+              bg-white
+              px-3
+              py-2
               text-sm
-              text-slate-500
+              text-slate-900
+              shadow-sm
+              outline-none
+              placeholder:text-slate-400
+              focus:border-slate-400
+              focus:ring-2
+              focus:ring-slate-200
+            "
+          />
+
+          <div className="text-right text-xs text-slate-500">
+            {customPrompt.length} / 5000 characters
+          </div>
+        </div>
+
+        {/* -------------------------------------------------------------------
+            BACK + SELECTION + AI ACTION
+        -------------------------------------------------------------------- */}
+
+        <div className="flex items-center justify-between">
+          {/* -----------------------------------------------------------------
+              BACK
+          ------------------------------------------------------------------ */}
+
+          <button
+            type="button"
+            onClick={onBack}
+            className="
+              rounded-lg
+              border
+              border-slate-300
+              px-5
+              py-2.5
+              text-sm
+              font-medium
+              text-slate-700
+              transition
+              hover:bg-slate-100
             "
           >
-            Selected:
+            ← Back
+          </button>
 
+          {/* -----------------------------------------------------------------
+              SELECTION + AI ACTION
+          ------------------------------------------------------------------ */}
+
+          <div className="flex items-center gap-4">
             <span
               className="
-                ml-1
-                font-semibold
-                text-indigo-600
+                text-sm
+                text-slate-500
               "
             >
-              {selectedErrorIds.length}
+              Selected:
+
+              <span
+                className="
+                  ml-1
+                  font-semibold
+                  text-indigo-600
+                "
+              >
+                {selectedErrorIds.length}
+              </span>
+
+              {" "}
+              Error
+              {selectedErrorIds.length !== 1
+                ? "s"
+                : ""}
             </span>
 
-            {" "}
-            Error
-            {selectedErrorIds.length !== 1
-              ? "s"
-              : ""}
-          </span>
+            {/* ---------------------------------------------------------------
+                AI ANALYSIS LAUNCHER
 
-          {/* ---------------------------------------------------------------
-              AI ANALYSIS LAUNCHER
+                This continues to handle:
+                - POST /api/ai/analyze
+                - SSE progress connection
+                - progress events
+                - completion
+                - error handling
+            ---------------------------------------------------------------- */}
 
-              This continues to handle:
-              - POST /api/ai/analyze
-              - SSE progress connection
-              - progress events
-              - completion
-              - error handling
-          ---------------------------------------------------------------- */}
-
-          <AIAnalysisLauncher
+            <AIAnalysisLauncher
               selectedErrors={
                 selectedErrorsForAI
               }
-
+              customPrompt={customPrompt}
               onStarted={() => {
                 console.log(
                   "====================================",
@@ -468,22 +526,29 @@ export default function WebResult({
               }}
 
               onCompleted={(response) => {
-                console.log( "====================================",  );
+                console.log(
+                  "====================================",
+                );
 
-                console.log( "AI ANALYSIS BACKEND COMPLETED",  );
+                console.log(
+                  "AI ANALYSIS BACKEND COMPLETED",
+                );
 
-                console.log(  response, );
+                console.log(
+                  response,
+                );
 
                 console.log(
                   "====================================",
                 );
-            //    setAiAnalysisResponse(
-              //    response,
-                //);
 
-                //setAiAnalysisError(
-                  //null,
-                //);
+                // setAiAnalysisResponse(
+                //   response,
+                // );
+
+                // setAiAnalysisError(
+                //   null,
+                // );
               }}
 
               onClosed={(response) => {
@@ -526,10 +591,13 @@ export default function WebResult({
                 );
               }}
             />
-
+          </div>
         </div>
-
       </div>
+
+      {/* =====================================================================
+          AI ANALYSIS ERROR
+      ====================================================================== */}
 
       {/* =====================================================================
           AI ANALYSIS ERROR
