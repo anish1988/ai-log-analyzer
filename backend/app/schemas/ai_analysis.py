@@ -115,6 +115,15 @@ class AIAnalysisRequest(BaseModel):
         description="Errors selected for AI analysis.",
     )
 
+    custom_prompt: str | None = Field(
+        default=None,
+        max_length=5000,
+        description=(
+            "Optional additional user instruction to refine "
+            "the AI analysis."
+        ),
+    )
+
     metadata: dict[str, Any] = Field(
         default_factory=dict,
         description="Optional request metadata.",
@@ -123,6 +132,23 @@ class AIAnalysisRequest(BaseModel):
     @field_validator("request_id")
     @classmethod
     def validate_request_id(
+        cls,
+        value: str | None,
+    ) -> str | None:
+
+        if value is None:
+            return None
+
+        value = value.strip()
+
+        if not value:
+            return None
+
+        return value
+        
+    @field_validator("custom_prompt")
+    @classmethod
+    def validate_custom_prompt(
         cls,
         value: str | None,
     ) -> str | None:

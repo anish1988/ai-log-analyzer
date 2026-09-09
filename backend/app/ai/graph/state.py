@@ -228,6 +228,8 @@ class AIAnalysisState(TypedDict, total=False):
 
     selected_errors: list[SelectedError]
 
+    custom_prompt: str | None
+
 
     # =========================================================================
     # CURRENT ERROR PROCESSING

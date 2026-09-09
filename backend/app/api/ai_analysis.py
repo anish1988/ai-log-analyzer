@@ -244,6 +244,8 @@ async def analyze_errors(
         for error in request.selected_errors
     ]
 
+    custom_prompt = request.custom_prompt
+
     print(
         f"Request ID   : {request_id}"
     )
@@ -293,6 +295,8 @@ async def analyze_errors(
             "request_id": request_id,
 
             "selected_errors": selected_errors,
+
+            "custom_prompt": custom_prompt,
 
             "current_error_index": 0,
 

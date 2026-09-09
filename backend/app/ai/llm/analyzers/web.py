@@ -269,6 +269,7 @@ Do not return explanatory text outside the structured response.
         *,
         error: dict[str, Any],
         historical_context: dict[str, Any] | None = None,
+        custom_prompt: str | None = None,
     ) -> dict[str, Any]:
 
         user_prompt = (
@@ -287,6 +288,19 @@ Do not return explanatory text outside the structured response.
                 ),
             )
         )
+        if custom_prompt:
+            user_prompt += (
+                "\n\n"
+                "============================================================\n"
+                "ADDITIONAL USER ANALYSIS REQUEST\n"
+                "============================================================\n\n"
+                "The user has requested additional focus for this analysis:\n\n"
+                f"{custom_prompt}\n\n"
+                "Use this request to refine the analysis where relevant.\n"
+                "Do not ignore the supplied evidence.\n"
+                "Do not invent information.\n"
+                "The existing evidence rules and required response schema remain mandatory."
+            )
 
         result = await self.llm_service.analyze_structured(
             system_prompt=self.get_system_prompt(),

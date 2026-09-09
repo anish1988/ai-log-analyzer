@@ -20,6 +20,8 @@ import AIAnalysisProgress from "./AIAnalysisProgress";
 interface AIAnalysisLauncherProps {
   selectedErrors: AISelectedError[];
 
+  customPrompt?: string;
+
   /**
    * Called when a new AI analysis request starts.
    */
@@ -95,6 +97,7 @@ function createRequestId(): string {
 
 export default function AIAnalysisLauncher({
   selectedErrors,
+  customPrompt,
   onStarted,
   onProgress,
   onCompleted,
@@ -283,6 +286,9 @@ export default function AIAnalysisLauncher({
 
             selected_errors:
               selectedErrors,
+
+            custom_prompt:
+              customPrompt?.trim() || null,  
           };
 
           console.log(
@@ -453,6 +459,7 @@ export default function AIAnalysisLauncher({
       [
         isAnalyzing,
         selectedErrors,
+        customPrompt,
         onStarted,
         onCompleted,
         onError,

@@ -109,6 +109,10 @@ async def run_llm_analysis(
         "rag_result"
     )
 
+    custom_prompt = state.get(
+        "custom_prompt"
+    )
+
     print(
         "Historical RAG Context:"
     )
@@ -145,6 +149,7 @@ async def run_llm_analysis(
             if rag_decision == "REVIEW"
             else None
         ),
+        custom_prompt=custom_prompt,
     )
 
     print("=" * 100)

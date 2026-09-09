@@ -35,7 +35,7 @@ services:
       # Mount the host filesystem read-only
       - /:/host_fs:ro
      # - ./local-test-logs:/var/log
-      - C:/Users/anish.rai/Downloads/id_rsa:/secrets/id_rsa:ro
+    #  - C:/Users/anish.rai/Downloads/id_rsa:/secrets/id_rsa:ro
       # Apache Logs
     #  - /var/log/apache2:/host_logs/apache2:ro
       - /var/log/apache2:/var/log/apache2:ro
