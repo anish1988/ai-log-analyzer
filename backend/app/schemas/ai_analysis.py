@@ -328,6 +328,7 @@ class JiraTicketCreateRequest(BaseModel):
         One Jira ticket
     """
 
+    analysis_run_id: str
     analysis: AIAnalysisResultResponse
 
 
@@ -353,6 +354,8 @@ class AIAnalysisResponse(BaseModel):
     """
 
     request_id: str
+
+    analysis_run_id: str | None = None
 
     status: Literal[
         "processing",

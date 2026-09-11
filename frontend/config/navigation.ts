@@ -27,7 +27,7 @@ export const navigationItems: NavigationItem[] = [
   },
   {
     title: "Analysis History",
-    href: "/history",
+    href: "/analysis-history",
     icon: History,
   },
   {
