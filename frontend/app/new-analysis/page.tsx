@@ -57,7 +57,7 @@ const isInvalidSavedSearchId =
   savedSearchIdParam !== null &&
   (
     !Number.isInteger(savedSearchId) ||
-    savedSearchId <= 0
+    savedSearchId !== null && savedSearchId <= 0
   );
 
 useEffect(() => {

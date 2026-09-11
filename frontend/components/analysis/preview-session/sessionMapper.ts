@@ -1,4 +1,5 @@
-import type { LogFetchResponse } from "@/lib/log-analysis/types";
+// import type { LogFetchResponse } from "@/lib/log-analysis/types";
+import type { LogFetchResponse } from "@/lib/types/preview";
 
 export function mapLogFetchResponseToSessions(
   response: LogFetchResponse

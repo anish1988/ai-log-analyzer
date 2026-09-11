@@ -1,7 +1,8 @@
 "use client";
 
 import { FileText, Server } from "lucide-react";
-import type { FileResult } from "./types";
+//import type { FileResult } from "./types";
+import type { FileResult } from "@/lib/types/preview";
 
 interface FileCardProps {
   file: FileResult;

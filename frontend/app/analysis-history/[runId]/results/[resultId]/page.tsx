@@ -81,8 +81,18 @@ function toAIAnalysisResult(
     source_line_number:
       result.source_line_number,
     test_result: {
-      ...(result.test_result ?? {}),
-    },
+        test_steps: Array.isArray(result.test_result?.test_steps)
+            ? result.test_result.test_steps
+            : [],
+        expected_result:
+            typeof result.test_result?.expected_result === "string"
+            ? result.test_result.expected_result
+            : "",
+        status:
+            typeof result.test_result?.status === "string"
+            ? result.test_result.status
+            : "",
+        },
     jira_description:
       result.jira_description ?? "",
     evidence: Array.isArray(result.evidence)

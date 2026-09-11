@@ -1,7 +1,8 @@
 "use client";
 
 import FileCard from "./FileCard";
-import type { FileResult } from "./types";
+//import type { FileResult } from "./types";
+import type { FileResult } from "@/lib/types/preview";
 
 interface FileListProps {
   results: FileResult[];

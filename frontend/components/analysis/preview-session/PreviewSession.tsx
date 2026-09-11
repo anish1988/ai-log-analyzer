@@ -7,7 +7,8 @@ import SessionList from "./SessionList";
 import PreviewFooter from "./PreviewFooter";
 import { mapLogFetchResponseToSessions } from "./sessionMapper";
 
-import type { LogFetchResponse } from "@/lib/log-analysis/types";
+//import type { LogFetchResponse } from "@/lib/log-analysis/types";
+import type { LogFetchResponse } from "@/lib/types/preview";
 
 interface PreviewSessionProps {
   data: LogFetchResponse;

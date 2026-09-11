@@ -183,3 +183,8 @@ export interface WebLogFetchResponse {
   results: WebLogFile[];
 
 }
+
+export interface PermissionCheckResponse {
+  granted: boolean;
+  message?: string | null;
+}

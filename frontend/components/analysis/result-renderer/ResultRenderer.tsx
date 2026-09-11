@@ -52,7 +52,7 @@ export default function ResultRenderer({
           data={
             data as LogFetchResponse
           }
-          onBack={onBack}
+         // onBack={onBack}
         />
       );
 

@@ -1,4 +1,4 @@
-import type { LogFileConfig } from "@/lib/log-analysis/types";
+//import type { LogFileConfig } from "@/lib/log-analysis/types";
 
 /**
  * Which log files get searched for a given tier. Selecting "Web" only ever
@@ -6,6 +6,18 @@ import type { LogFileConfig } from "@/lib/log-analysis/types";
  * the telephony ones, and so on. Adding a new log file for a tier is just a
  * new entry here — no resolver/fetch code changes.
  */
+
+export interface LogFileConfig {
+  id: string;
+  tier: "web" | "telephony" | "db";
+  label: string;
+  service: string;
+  remotePathTemplate: string;
+  hasDatePattern: boolean;
+  datePattern?: string;
+  gzipAfterDays?: number;
+}
+
 export const LOG_FILE_REGISTRY: LogFileConfig[] = [
   // --- Web tier ---
   {

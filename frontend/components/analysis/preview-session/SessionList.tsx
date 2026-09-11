@@ -1,8 +1,9 @@
 "use client";
 
 import SessionCard from "./SessionCard";
+import type { Session } from "./types";
 
-export interface Session {
+/*export interface Session {
   id: string;
   leadId: string;
   campaign: string;
@@ -17,7 +18,7 @@ export interface Session {
   errors: number;
   warnings: number;
 }
-
+*/
 interface SessionListProps {
   sessions: Session[];
 
