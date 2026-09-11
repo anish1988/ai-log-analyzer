@@ -1,0 +1,104 @@
+Great ,
+
+
+
+but we need to give one buton for custom prompt and if user click on button then we need to display the default prompt as well and then text area for custom prompt and thne we nee dto send custom prompt in payload ..
+
+
+
+but write now attache dscrren show .
+
+
+
+we nee dto chnage the flow . but we do it later ..
+
+
+
+we stop at this moment to this and nee dto startt new module >>
+
+
+
+that is save all the anylysis in database.
+
+
+
+so requirmet is bwlo . please read carefully
+
+
+
+1) step 1- user fill the form as per user requiremt , mena sselect tiew , logtuype and date and all 
+
+2) user click on AI anlysisy , menas step 2
+
+3) step 3 we get the reponse from backend after creating jira ticket and all llm analysis , RAG anlaysis nad finding .bfore sending reponse to fronend , w emake one new process "save in datbase"
+
+
+
+4) so we need to make minimum two table ..tum analysys kar ke batn akitna table banna chiye jo reporting mai use ho sake
+
+5) save in databas edono ke liye hoga .. automation as well as browser 
+
+6) toham ecomman banna hai
+
+7) jab automation ka cron run hoga to phel etable mai date time log file and number of log process or , no of log unprocess , user id .. or ek do column  rahnge .
+
+8) dusre table mai har file mai jitne log anlysis hue hai har ke entry .. jaise cron job 01 AM ko run hua or 10 log read kiya or process kiya ..
+
+to first table mai minimum entry 
+
+or dusre table mai 10 log ki request body , response ,body , jira url, or phletable ki refrence id , dusra table mai jayd acolumn ho sakte hain jaise .. rrot cause ke liye alag column, jira url ke liye alag column, menmas response mai har param ke liye column bano .. or ek column requets or response to ttx type ho kisme palylpoad/ request or response sara ek sath ho 
+
+
+
+ye mera requiremnt hai .. 
+
+
+
+jab database mai save ho jaye yto hame side bar mai ek oprion den ahai check karne k eliye jisme user woise filter kar ke unke detiled dikhne . 
+
+
+
+jo fist page mia first tabk ese dat adeikhne or jab user clik karega detiled mai tab scond table s eya jo abhi hum summary mai dikha rah ehai wo page dikhna chhaiye
+
+
+
+now you give me a plan idea for this requirment
+
+
+
+
+
+
+
+Analysis History & Persistence
+│
+├── Database persistence
+│   ├── Analysis Run
+│   └── Analysis Result
+│
+├── Common persistence service
+│   ├── Browser analysis
+│   └── Automation analysis
+│
+├── Backend APIs
+│   ├── History list
+│   ├── Run details
+│   └── Result details
+│
+├── Frontend
+│   ├── Sidebar
+│   ├── History summary page
+│   ├── Filters
+│   ├── Run detail page
+│   └── Analysis result detail
+│
+└── Testing
+    ├── Backend unit tests
+    ├── Browser E2E
+    ├── Automation E2E
+    └── Regression
+
+
+
+
+Phase 2 — Database Design & Migration is complete. ✅

@@ -24,15 +24,23 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+from uuid import UUID
 
 from app.automation.jira.jira_ticket_processor import (
     JiraTicketProcessor,
 )
+
 from app.automation.orchestrator.models import (
     AutomationRun,
 )
+
 from app.automation.results.result_writer import (
     AutomationResultWriter,
+)
+
+from app.repositories.analysis_history_repository import (
+    get_analysis_results,
+    update_analysis_result_jira,
 )
 
 
@@ -85,6 +93,7 @@ class AnalysisResultProcessor:
         self,
         *,
         run: AutomationRun,
+        analysis_run_id: str | None,
         final_results: list[dict[str, Any]],
     ) -> AnalysisProcessingSummary:
         """
@@ -154,6 +163,63 @@ class AnalysisResultProcessor:
                         analysis
                     )
                 )
+
+                # ---------------------------------------------------------
+                # UPDATE ANALYSIS HISTORY WITH JIRA DETAILS
+                # ---------------------------------------------------------
+
+                if jira_result.get("created"):
+                    try:
+                        persisted_results = (
+                            get_analysis_results(
+                                analysis_run_id=UUID(
+                                    analysis_run_id
+                                )
+                            )
+                        )
+
+                        persisted_result = next(
+                            (
+                                result
+                                for result in persisted_results
+                                if result.get("error_id")
+                                == error_id
+                            ),
+                            None,
+                        )
+
+                        if persisted_result:
+                            update_analysis_result_jira(
+                                result_id=persisted_result["id"],
+                                jira_issue_key=(
+                                    jira_result.get(
+                                        "issue_key"
+                                    )
+                                ),
+                                jira_issue_id=(
+                                    jira_result.get(
+                                        "issue_id"
+                                    )
+                                ),
+                                jira_issue_url=(
+                                    jira_result.get(
+                                        "issue_url"
+                                    )
+                                ),
+                                jira_status=(
+                                    jira_result.get(
+                                        "status"
+                                    )
+                                ),
+                                jira_payload=jira_result,
+                            )
+
+                    except Exception as persistence_exc:
+                        print(
+                            "Failed to update analysis history "
+                            f"with Jira details for {error_id}: "
+                            f"{persistence_exc}"
+                        )
 
             except Exception as exc:
 

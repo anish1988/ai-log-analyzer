@@ -370,6 +370,9 @@ class ServerProcessor:
         processing_summary = (
             await self.result_processor.process(
                 run=run,
+                analysis_run_id=analysis_state.get(
+                    "analysis_run_id"
+                ),
                 final_results=final_results,
             )
         )

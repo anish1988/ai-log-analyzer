@@ -5,13 +5,23 @@ This endpoint receives selected errors from the frontend
 and executes the LangGraph AI analysis workflow.
 """
 
-from uuid import uuid4
+from uuid import UUID, uuid4
+from datetime import datetime
 
 from app.schemas.ai_analysis import (
     AIAnalysisRequest,
     AIAnalysisResponse,
     AIAnalysisResultResponse,
     AIProgressEventResponse,
+)
+
+from app.repositories.analysis_history_repository import (
+    create_analysis_run,
+    create_analysis_result,
+    get_analysis_results,
+    mark_analysis_run_completed,
+    mark_analysis_run_failed,
+    update_analysis_result_jira,
 )
 
 from app.ai.graph.workflow import (
@@ -43,6 +53,9 @@ from app.schemas.ai_analysis import (
 from app.integrations.jira.service import (
     JiraService,
 )
+
+
+DEVELOPMENT_USER_ID = "033e0e0b-528f-44c4-956f-ff48fff628c0"
 
 router = APIRouter(
     prefix="/api/ai",
@@ -316,6 +329,39 @@ async def analyze_errors(
         }
 
         # ---------------------------------------------------------------------
+        # CREATE ANALYSIS HISTORY RUN
+        # ---------------------------------------------------------------------
+
+        analysis_run_id = create_analysis_run(
+            request_id=request_id,
+            user_id=DEVELOPMENT_USER_ID,
+            source_type="manual",
+            status="processing",
+            total_errors=len(selected_errors),
+            log_type=(
+                selected_errors[0].get("log_type")
+                if selected_errors
+                else None
+            ),
+            servers=list(
+                {
+                    error.get("server")
+                    for error in selected_errors
+                    if error.get("server")
+                }
+            ),
+            log_files=list(
+                {
+                    error.get("file_name")
+                    for error in selected_errors
+                    if error.get("file_name")
+                }
+            ),
+            custom_prompt=custom_prompt,
+            metadata=request.metadata,
+        )
+
+        # ---------------------------------------------------------------------
         # RUN LANGGRAPH
         # ---------------------------------------------------------------------
 
@@ -352,6 +398,101 @@ async def analyze_errors(
             for item in final_results
         ]
 
+                # ---------------------------------------------------------------------
+        # PERSIST ANALYSIS RESULTS
+        # ---------------------------------------------------------------------
+
+        for result_model, raw_result in zip(
+            result_models,
+            final_results,
+        ):
+            create_analysis_result(
+                analysis_run_id=analysis_run_id,
+                error_id=result_model.error_id,
+                error_signature=(
+                    result_model.error_summary
+                ),
+                tier=result_model.tier,
+                log_type=result_model.log_type,
+                server=result_model.server,
+                file_name=result_model.file_name,
+                file_path=(
+                    next(
+                        (
+                            error.get("file_path")
+                            for error in selected_errors
+                            if error.get("error_id")
+                            == result_model.error_id
+                        ),
+                        None,
+                    )
+                ),
+                title=result_model.title,
+                severity=result_model.severity,
+                timestamp=(
+                    datetime.fromisoformat(
+                        result_model.timestamp.replace(
+                            "Z",
+                            "+00:00",
+                        )
+                    )
+                    if result_model.timestamp
+                    else None
+                ),
+                start_line=result_model.start_line,
+                end_line=result_model.end_line,
+                source=result_model.source,
+                rag_match=result_model.rag_match,
+                rag_knowledge_id=result_model.rag_knowledge_id,
+                rag_similarity=result_model.rag_similarity,
+                confidence=result_model.confidence,
+                analysis_status=result_model.status,
+                error_summary=result_model.error_summary,
+                root_cause=result_model.root_cause,
+                solution=result_model.solution,
+                optimization=result_model.optimization,
+                source_code_analysis=(
+                    result_model.source_code_analysis
+                ),
+                source_file=result_model.source_file,
+                source_line_number=(
+                    result_model.source_line_number
+                ),
+                jira_description=result_model.jira_description,
+                root_cause_evidence=(
+                    result_model.root_cause_evidence
+                ),
+                test_result=result_model.test_result,
+                evidence=result_model.evidence,
+                source_code_location=(
+                    raw_result.get(
+                        "source_code_location",
+                        {},
+                    )
+                ),
+                missing_information=(
+                    raw_result.get(
+                        "missing_information",
+                        [],
+                    )
+                ),
+             #   request_payload={
+             #       "request_id": request_id,
+             #      "selected_error": next(
+             #           (
+             #               error
+             #               for error in selected_errors
+             #               if error.get("error_id")
+             #               == result_model.error_id
+             #           ),
+             #          {},
+             #       ),
+             #      "custom_prompt": custom_prompt,
+             #   },
+                request_payload=request.model_dump(),
+                response_payload=raw_result,
+            )
+
         progress_event_models = [
             AIProgressEventResponse(
                 task_id=event.task_id,
@@ -380,6 +521,19 @@ async def analyze_errors(
         )
 
         # ---------------------------------------------------------------------
+        # MARK ANALYSIS RUN COMPLETED
+        # ---------------------------------------------------------------------
+
+        mark_analysis_run_completed(
+            analysis_run_id=analysis_run_id,
+            completed_errors=completed_errors,
+            failed_errors=(
+                len(selected_errors)
+                - completed_errors
+            ),
+        )
+
+        # ---------------------------------------------------------------------
         # FINAL STATUS
         # ---------------------------------------------------------------------
 
@@ -403,6 +557,10 @@ async def analyze_errors(
         response = AIAnalysisResponse(
 
             request_id=request_id,
+
+            analysis_run_id=str(
+                analysis_run_id
+            ),    
 
             status=final_status,
 
@@ -485,6 +643,24 @@ async def analyze_errors(
         )
 
         print("=" * 100)
+
+        # ---------------------------------------------------------------------
+        # MARK ANALYSIS RUN FAILED
+        # ---------------------------------------------------------------------
+
+        if "analysis_run_id" in locals():
+            try:
+                mark_analysis_run_failed(
+                    analysis_run_id=analysis_run_id,
+                    error_message=str(exc),
+                    completed_errors=0,
+                    failed_errors=len(selected_errors),
+                )
+            except Exception as persistence_exc:
+                print(
+                    "Failed to update analysis history run: "
+                    f"{persistence_exc!r}"
+                )
 
         raise HTTPException(
             status_code=500,
@@ -663,6 +839,7 @@ async def create_jira_ticket(
     """
 
     analysis = request.analysis
+    analysis_run_id = request.analysis_run_id
 
     error_id = (
         analysis.error_id
@@ -676,6 +853,34 @@ async def create_jira_ticket(
             detail=(
                 "Cannot create Jira ticket: "
                 "error_id is missing."
+            ),
+        )
+    try:
+        analysis_results = get_analysis_results(
+            analysis_run_id=UUID(analysis_run_id),
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid analysis_run_id.",
+        ) from exc
+
+    persisted_result = next(
+        (
+            result
+            for result in analysis_results
+            if result.get("error_id") == error_id
+        ),
+        None,
+    )
+
+    if persisted_result is None:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "Analysis result was not found "
+                "for the supplied analysis_run_id "
+                "and error_id."
             ),
         )
 
@@ -725,6 +930,31 @@ async def create_jira_ticket(
             f"{jira_base_url}/browse/"
             f"{issue_key}"
         )
+
+        # ---------------------------------------------------------------------
+        # UPDATE ANALYSIS HISTORY WITH JIRA DETAILS
+        # ---------------------------------------------------------------------
+        try:
+            jira_updated = update_analysis_result_jira(
+                result_id=persisted_result["id"],
+                jira_issue_key=issue_key,
+                jira_issue_id=issue_id,
+                jira_issue_url=issue_url,
+                jira_status=jira_result.get("status"),
+                jira_payload=jira_result,
+            )
+
+            if not jira_updated:
+                print(
+                    "Analysis history Jira update skipped: "
+                    f"result_id={persisted_result['id']}"
+                )
+
+        except Exception as persistence_exc:
+            print(
+                "Failed to update analysis history with Jira details: "
+                f"{persistence_exc!r}"
+            )
 
         print("=" * 100)
         print("JIRA TICKET CREATED")

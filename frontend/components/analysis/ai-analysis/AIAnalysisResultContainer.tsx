@@ -25,6 +25,11 @@ import {
 
 interface AIAnalysisResultContainerProps {
   response: AIAnalysisResponse;
+  singleResult?: boolean;
+  initialJiraTickets?: Record<
+    string,
+    JiraTicketCreateResponse
+  >;
 }
 
 type ResultTab =
@@ -76,6 +81,8 @@ const tabs: Array<{
 
 export default function AIAnalysisResultContainer({
   response,
+  singleResult = false,
+  initialJiraTickets = {},
 }: AIAnalysisResultContainerProps) {
   const results =
     response.final_results ?? [];
@@ -127,7 +134,7 @@ export default function AIAnalysisResultContainer({
       string,
       JiraTicketCreateResponse
     >
-  >({});
+  >(initialJiraTickets);
 
   /**
    * Jira error message.
@@ -263,6 +270,7 @@ export default function AIAnalysisResultContainer({
         const result =
           await createJiraTicket(
             selectedResult,
+            response.analysis_run_id ?? "",
           );
 
         console.log(
@@ -459,7 +467,7 @@ export default function AIAnalysisResultContainer({
         {/* ================================================================== */}
         {/* LEFT ERROR LIST                                                    */}
         {/* ================================================================== */}
-
+      {!singleResult && (
         <aside className="lg:col-span-3">
 
           <div className="sticky top-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -598,12 +606,18 @@ export default function AIAnalysisResultContainer({
           </div>
 
         </aside>
-
+      )}
         {/* ================================================================== */}
         {/* RIGHT RESULT AREA                                                  */}
         {/* ================================================================== */}
 
-        <div className="min-w-0 lg:col-span-9">
+        <div
+            className={`min-w-0 ${
+              singleResult
+                ? "lg:col-span-12"
+                : "lg:col-span-9"
+            }`}
+          >
 
           {selectedResult && (
             <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
