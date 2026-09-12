@@ -189,58 +189,63 @@ export default function WebResult({
   // ===========================================================================
 
   const selectedErrorsForAI: AISelectedError[] =
-    allErrors
-      .filter(
-        (error) =>
-          selectedErrorIds.includes(
-            error.error_id,
-          ),
-      )
-      .map(
-        (error) => ({
-          error_id:
-            error.error_id,
+  allErrors
+    .filter(
+      (error) =>
+        selectedErrorIds.includes(
+          error.error_id,
+        ),
+    )
+    .map(
+      (error) => ({
+        error_id:
+          error.error_id,
 
-          tier:
-            "web",
+        tier:
+          "web",
 
-          log_type:
-            error.log_type ?? "",
+        log_type:
+          error.log_type ?? "",
 
-          server:
-            error.server ?? "",
+        server:
+          error.server ?? "",
 
-          file_name:
-            error.file_name ?? "",
+        file_name:
+          error.file_name ?? "",
 
-          file_path:
-            error.file_path ?? "",
+        file_path:
+          error.file_path ?? "",
 
-          title:
-            error.title ?? "",
+        title:
+          error.title ?? "",
 
-          severity:
-            error.severity ?? "",
+        severity:
+          error.severity ?? "",
 
-          timestamp:
-            error.timestamp ?? "",
+        timestamp:
+          error.timestamp ?? "",
 
-          start_line:
-            error.start_line ?? null,
+        start_line:
+          error.start_line ?? null,
 
-          end_line:
-            error.end_line ?? null,
+        end_line:
+          error.end_line ?? null,
 
-          total_lines:
-            error.total_lines ?? null,
+        total_lines:
+          error.total_lines ?? null,
 
-          error_content:
-            error.error_content ?? "",
+        error_content:
+          error.lines.map(
+            (line) => line.raw,
+          ).join("\n"),
 
-          lines:
-            error.lines ?? [],
-        }),
-      );
+        lines:
+          error.lines.map((line) => ({
+            line_number: line.line_number,
+            raw: line.raw,
+          })),
+      }),
+    );
 
   // ===========================================================================
   // RENDER

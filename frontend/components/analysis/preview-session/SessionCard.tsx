@@ -8,8 +8,10 @@ import {
   Bug,
 } from "lucide-react";
 
+import type { Session } from "./types";
+
 export interface SessionCardProps {
-  session: {
+ /* session: {
     id: string;
     leadId: string;
     campaign: string;
@@ -24,7 +26,8 @@ export interface SessionCardProps {
     errors: number;
     warnings: number;
     raw: unknown;
-  };
+  };*/
+  session: Session;
 
   selected: boolean;
 
@@ -40,19 +43,7 @@ export default function SessionCard({
     console.log(" Session Cards");
     console.log(session);
    // console.log(session.fields.lael);
-   console.table([
-    {
-      ID: session.id,
-      Lead: session.leadId,
-      Campaign: session.campaign,
-      Duration: session.duration,
-    //  Servers: session.servers.join(", "),//session.server,
-      Lines: session.totalLines,
-      Errors: session.errors,
-      Warnings: session.warnings,
-      Summary: session.summary,
-    },
-  ]);
+   
     console.log("=================================");
     //debugger;
   return (
@@ -117,7 +108,7 @@ export default function SessionCard({
 
               <div className="flex items-center gap-2">
                 <Clock3 className="h-4 w-4" />
-                {session.duration}
+                {session.server}
               </div>
 
               <div className="flex items-center gap-2">
@@ -134,7 +125,7 @@ export default function SessionCard({
 
             {/* Summary */}
             <p className="text-base text-gray-700">
-              {session.summary}
+              {session.title}
             </p>
 
           </div>
@@ -149,7 +140,7 @@ export default function SessionCard({
             <Bug className="mb-2 h-5 w-5 text-red-500" />
 
             <span className="text-2xl font-semibold">
-              {session.errors}
+              {session.stats.find((stat) => stat.label.toLowerCase() === "errors")?.value ?? 0}
             </span>
 
             <span className="text-sm text-gray-500">
@@ -164,7 +155,7 @@ export default function SessionCard({
             <AlertTriangle className="mb-2 h-5 w-5 text-amber-500" />
 
             <span className="text-2xl font-semibold">
-              {session.warnings}
+              {session.stats.find((stat) => stat.label.toLowerCase() === "warnings")?.value ?? 0}
             </span>
 
             <span className="text-sm text-gray-500">

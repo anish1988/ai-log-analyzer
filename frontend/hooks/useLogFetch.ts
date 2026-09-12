@@ -2,12 +2,20 @@
 
 import { useCallback, useReducer } from "react";
 import { useRouter } from "next/navigation";
-import type {
+/*import type {
   LogFetchResponse,
   WebLogFetchResponse,
   PermissionCheckResponse,
   SearchFiltersState,
-} from "@/lib/log-analysis/types";
+} from "@/lib/log-analysis/types";*/
+
+import type {
+  LogFetchResponse,
+  WebLogFetchResponse,
+  PermissionCheckResponse,
+} from "@/lib/types/preview";
+
+import type { SearchFiltersState } from "@/types/log-analysis";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 type Status =
@@ -102,7 +110,10 @@ export function useLogFetch() {
         console.log("Complete Response:");
         console.log(data);
 
-        console.log("Total Matched Lines:", data.total_lines);
+        console.log(
+          "Total Matched Lines:",
+          "total_lines" in data ? data.total_lines : 0,
+        );
 
         console.log("Result Buckets:", data.results);
 
@@ -111,13 +122,17 @@ export function useLogFetch() {
         console.log(`Bucket ${bucketIndex + 1}`);
 
         console.log("Server:", bucket.server);
-        console.log("Log File:", bucket.log_file);
-        console.log("Matched Lines:", bucket.lines?.length);
+          if ("searched_file" in bucket) {
+          console.log("Log File:", bucket.searched_file);
+          console.log("Matched Lines:", bucket.lines?.length);
 
-        bucket.lines?.forEach((line, lineIndex) => {
-            console.log(`Line ${lineIndex + 1}`);
-            console.log(line);
-        });
+          bucket.lines?.forEach((line, lineIndex) => {
+            console.log(`Line ${lineIndex + 1}:`, line);
+          });
+        } else {
+          console.log("Log File:", bucket.file_name);
+          console.log("Matched Errors:", bucket.errors?.length);
+        }
         });
 
         console.log("======================================");

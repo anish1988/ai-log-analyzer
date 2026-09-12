@@ -15,6 +15,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
+        "https://ai-log-analyzer-frontend-150786666272.asia-south1.run.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],

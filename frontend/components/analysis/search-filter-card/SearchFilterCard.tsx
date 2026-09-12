@@ -87,7 +87,7 @@ export default function SearchFilterCard({
 
           <p>
             <strong>Total Matched Lines:</strong>{" "}
-            {data.total_lines}
+            {"total_lines" in data ? data.total_lines : 0}
           </p>
 
           <p className="mb-4">
