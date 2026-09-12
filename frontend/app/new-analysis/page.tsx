@@ -1,7 +1,7 @@
 // frontend/app/new-analysis/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 import { useSearchParams } from "next/navigation";
 
@@ -306,7 +306,9 @@ export default function NewAnalysisPage() {
     <SearchFiltersProvider>
 
       <div className="mx-auto max-w-7xl px-6 py-8">
-    <SavedSearchLoader />    
+        <Suspense fallback={null}>
+          <SavedSearchLoader />
+        </Suspense>  
 
         {/* ================================================================== */}
         {/* STEPPER                                                            */}
